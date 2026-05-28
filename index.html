@@ -30,6 +30,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
 .btn:active{transform:scale(.97)}
 .btn-primary{background:var(--ink);color:var(--cream);border-color:var(--ink)}
 .btn-primary:hover{background:var(--amber);border-color:var(--amber)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn:disabled:hover{background:transparent;border-color:var(--border-mid)}
+.autosave-status{font-size:.68rem;color:var(--ink-faint);white-space:nowrap}
 .workspace{display:grid;grid-template-columns:1fr 320px;flex:1;min-height:0}
 .editor-pane{padding:2.5rem 3rem;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:1.5rem;overflow-y:auto}
 .editor-hint{font-size:.8rem;color:var(--ink-muted);background:var(--amber-light);border:1px solid rgba(212,120,10,.15);border-radius:8px;padding:.6rem 1rem}
@@ -174,6 +177,12 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
   </div>
   <div class="header-actions">
     <span class="stage-badge">Stage 4</span>
+    <span id="autosave-status" class="autosave-status">Not saved yet</span>
+    <button class="btn" id="undo-btn" onclick="undoSong()" disabled>Undo</button>
+    <button class="btn" id="redo-btn" onclick="redoSong()" disabled>Redo</button>
+    <button class="btn" onclick="newSong()">New</button>
+    <button class="btn" onclick="saveSong()">Save</button>
+    <button class="btn" onclick="loadSong()">Load</button>
     <button class="btn" onclick="clearAll()">Clear</button>
     <button class="btn btn-primary" onclick="exportSheet()">Export ↗</button>
   </div>
@@ -387,15 +396,40 @@ const TYPES=[
 // ═══ STATE ═══
 let selectedMarker=null,markerCounter=0,sectionCounter=0,dragSourceRow=null;
 let tuning='standard',key='G',mode='major',typeFilter='all',capo=0;
+let customChordShapes={};
+
+// Save/load + undo/redo state
+const AUTOSAVE_KEY='chordlock.autosave.v1';
+const SONGS_KEY='chordlock.savedSongs.v1';
+const HISTORY_LIMIT=80;
+let autosaveTimer=null;
+let historyInputTimer=null;
+let historyStack=[];
+let historyIndex=-1;
+let isRestoring=false;
+let isApplyingHistory=false;
+let suppressHistory=false;
+
+// Keep a clean built-in copy so changing songs does not leak custom chord shapes.
+const BUILTIN_CHORDS_SNAPSHOT=JSON.parse(JSON.stringify(CHORDS));
 
 // ═══ INIT ═══
 function init(){
   buildCapoRow();buildKeyRow();buildModeRow();buildTypeRow();buildChordGrid();
-  addSection('Verse 1');
+
+  const restored=tryRestoreAutosave();
+  if(!restored){
+    addBlankStarterSong(false);
+  }
+
   document.getElementById('editor-pane').addEventListener('click',()=>{
     setTimeout(()=>document.getElementById('hint').classList.add('hidden'),7000);
   },{once:true});
+
+  bindInputPersistenceListeners();
   updateLiveKeyContext();
+  initialiseHistory();
+  scheduleAutosave();
 }
 
 
@@ -422,6 +456,7 @@ function setCapo(value,btn){
   updateSummary();
   updateLiveKeyContext();
   if(selectedMarker?.dataset.chord)showDiagram(selectedMarker.dataset.chord);
+  commitHistory('set capo');
 }
 
 function updateAllMarkerSoundingTitles(){
@@ -444,11 +479,12 @@ function updateLiveKeyContext(){
 function setTuning(t,btn){
   tuning=t;
   document.querySelectorAll('.tuning-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  if(btn)btn.classList.add('active');
   buildChordGrid();
   if(selectedMarker?.dataset.chord)showDiagram(selectedMarker.dataset.chord);
   updateSummary();
   updateLiveKeyContext();
+  commitHistory('set tuning');
 }
 
 // ═══ KEY ═══
@@ -466,8 +502,9 @@ function buildKeyRow(){
 function setKey(k,btn){
   key=k;
   document.querySelectorAll('.key-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
+  if(btn)btn.classList.add('active');
   buildChordGrid();
+  commitHistory('set key');
 }
 
 // ═══ MODE ═══
@@ -485,9 +522,10 @@ function buildModeRow(){
 function setMode(m,btn){
   mode=m;
   document.querySelectorAll('#mode-row .pill-btn').forEach(b=>b.classList.remove('active-mode'));
-  btn.classList.add('active-mode');
+  if(btn)btn.classList.add('active-mode');
   key=Object.keys(KEY_DATA[mode])[0];
   buildKeyRow();buildChordGrid();
+  commitHistory('set mode');
 }
 
 // ═══ TYPE FILTER ═══
@@ -505,8 +543,9 @@ function buildTypeRow(){
 function setType(t,btn){
   typeFilter=t;
   document.querySelectorAll('#type-row .pill-btn').forEach(b=>b.classList.remove('active-type'));
-  btn.classList.add('active-type');
+  if(btn)btn.classList.add('active-type');
   buildChordGrid();
+  commitHistory('set type filter');
 }
 
 function matchesType(chord){
@@ -648,23 +687,47 @@ function drawDiag(svg,chord,W,H,t){
 }
 
 // ═══ SECTIONS ═══
-function addSection(label){
+function addSection(label, commit=true){
+  const id=createSectionShell(label);
+  withSuppressedHistory(()=>{addLine(id, null, '', false);addLine(id, null, '', false);addLine(id, null, '', false);});
+  if(commit)commitHistory('add section');
+  return id;
+}
+
+function createSectionShell(label){
   sectionCounter++;
   const id='sec-'+sectionCounter;
   const block=document.createElement('div');
   block.className='section-block';block.id=id;
   block.innerHTML=`<div class="section-label-row">
-    <input class="section-label-input" value="${label||''}" placeholder="Section...">
+    <input class="section-label-input" value="${escapeAttr(label||'')}" placeholder="Section...">
     <button class="remove-section-btn" onclick="removeSection('${id}')">✕ remove</button>
   </div><div class="lines-container"></div>
   <button class="add-line-btn" onclick="addLine('${id}')">+ add line</button>`;
   document.getElementById('sections-container').appendChild(block);
-  addLine(id);addLine(id);addLine(id);
+  return id;
 }
-function removeSection(id){document.getElementById(id)?.remove();updateSummary();updateLiveKeyContext();}
 
-function addLine(secId,chordsData){
+function addSectionFromData(sectionData){
+  const id=createSectionShell(sectionData?.label||'');
+  const lines=Array.isArray(sectionData?.lines)?sectionData.lines:[];
+  if(lines.length){
+    lines.forEach(line=>addLine(id, line.chords||[], line.lyric||'', false));
+  } else {
+    addLine(id, null, '', false);
+  }
+  return id;
+}
+
+function removeSection(id){
+  document.getElementById(id)?.remove();
+  updateSummary();updateLiveKeyContext();
+  commitHistory('remove section');
+}
+
+function addLine(secId,chordsData=null,lyricText='',commit=true){
   const sec=document.getElementById(secId);
+  if(!sec)return null;
   const cont=sec.querySelector('.lines-container');
   const lid='line-'+(++markerCounter);
   const wrap=document.createElement('div');
@@ -676,17 +739,19 @@ function addLine(secId,chordsData){
   row.className='chord-row';
   row.addEventListener('click',e=>{if(!e.target.closest('.chord-marker'))onRowClick(e,row);});
   const inp=document.createElement('input');
-  inp.type='text';inp.className='lyric-text-input';inp.placeholder='Type lyric here...';
+  inp.type='text';inp.className='lyric-text-input';inp.placeholder='Type lyric here...';inp.value=lyricText||'';
   inp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){e.preventDefault();addLine(secId);const ins=sec.querySelectorAll('.lyric-text-input');ins[ins.length-1].focus();}
     if(e.key==='Backspace'&&inp.value===''){
       const all=cont.querySelectorAll('.lyric-line-wrapper');
-      if(all.length>1){wrap.remove();updateSummary();const r=cont.querySelectorAll('.lyric-text-input');if(r.length)r[r.length-1].focus();}
+      if(all.length>1){wrap.remove();updateSummary();updateLiveKeyContext();commitHistory('remove line');const r=cont.querySelectorAll('.lyric-text-input');if(r.length)r[r.length-1].focus();}
     }
   });
   wrap.appendChild(handle);wrap.appendChild(row);wrap.appendChild(inp);
   cont.appendChild(wrap);
-  if(chordsData){chordsData.forEach(({pct,chord})=>{const m=placeMarker(row,pct,false);if(chord)nameMarker(m,chord,false);});updateSummary();}
+  if(chordsData){chordsData.forEach(({pct,chord})=>{const m=placeMarker(row,pct,false);if(chord)nameMarker(m,chord,false);});updateSummary();updateLiveKeyContext();}
+  if(commit)commitHistory('add line');
+  return wrap;
 }
 
 // ═══ DRAG COPY ═══
@@ -721,9 +786,12 @@ function onDragUp(e){
 }
 function copyRow(src,tgt){
   const data=getRowChords(src);if(!data.length)return;
-  tgt.querySelectorAll('.chord-marker').forEach(m=>m.remove());
-  data.forEach(({pct,chord})=>{const m=placeMarker(tgt,pct,false);if(chord)nameMarker(m,chord,false);});
-  updateSummary();
+  withSuppressedHistory(()=>{
+    tgt.querySelectorAll('.chord-marker').forEach(m=>m.remove());
+    data.forEach(({pct,chord})=>{const m=placeMarker(tgt,pct,false);if(chord)nameMarker(m,chord,false);});
+  });
+  updateSummary();updateLiveKeyContext();
+  commitHistory('copy chords');
   tgt.style.background='rgba(15,110,86,0.12)';
   setTimeout(()=>tgt.style.background='',600);
 }
@@ -747,7 +815,7 @@ function placeMarker(row,pct,doSelect=true){
   m.appendChild(lbl);
   m.addEventListener('click',e=>{e.stopPropagation();selectMarker(m,e);});
   row.appendChild(m);
-  if(doSelect){selectMarker(m);updateSummary();}
+  if(doSelect){selectMarker(m);updateSummary();commitHistory('place marker');}
   return m;
 }
 function selectMarker(m,e){
@@ -767,6 +835,7 @@ function removeMarker(m){
   document.getElementById('picker-status').textContent='Click a marker to name it';
   document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('active'));
   hideDiagram();updateSummary();updateLiveKeyContext();
+  commitHistory('remove marker');
 }
 function applyChord(ch){if(selectedMarker)nameMarker(selectedMarker,ch);}
 function nameMarker(m,ch,deselect=true){
@@ -783,6 +852,7 @@ function nameMarker(m,ch,deselect=true){
   }
   updateSummary();
   updateLiveKeyContext();
+  commitHistory('name chord');
 }
 
 // ═══ SUMMARY ═══
@@ -816,10 +886,9 @@ function updateSummary(){
 // ═══ CLEAR / EXPORT ═══
 function clearAll(){
   if(!confirm('Clear everything?'))return;
-  document.getElementById('song-title').value='';
-  document.getElementById('sections-container').innerHTML='';
-  sectionCounter=0;markerCounter=0;selectedMarker=null;
-  hideDiagram();addSection('Verse 1');updateSummary();updateKeyContextStatus(null,0);
+  restoreSong(createBlankSongData(), {preserveHistory:true});
+  commitHistory('clear all');
+  saveAutosaveNow();
 }
 function exportSheet(){
   const title=document.getElementById('song-title').value||'Untitled';
@@ -855,6 +924,284 @@ function exportSheet(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));
   a.download=title.replace(/\s+/g,'-').toLowerCase()+'-chords.txt';a.click();
+}
+
+
+// ═══ SAVE / LOAD / AUTOSAVE / UNDO REDO ═══
+function withSuppressedHistory(fn){
+  const prev=suppressHistory;
+  suppressHistory=true;
+  try{return fn();}
+  finally{suppressHistory=prev;}
+}
+
+function cloneData(value){
+  return JSON.parse(JSON.stringify(value));
+}
+
+function createBlankSongData(){
+  return {
+    version:1,
+    title:'',
+    tuning:'standard',
+    capo:0,
+    key:'G',
+    mode:'major',
+    typeFilter:'all',
+    customChordShapes:{},
+    sections:[{
+      label:'Verse 1',
+      lines:[
+        {lyric:'',chords:[]},
+        {lyric:'',chords:[]},
+        {lyric:'',chords:[]}
+      ]
+    }]
+  };
+}
+
+function addBlankStarterSong(commit=true){
+  restoreSong(createBlankSongData(), {preserveHistory:true});
+  if(commit)commitHistory('new blank song');
+}
+
+function resetChordLibraryToBuiltins(){
+  Object.keys(CHORDS).forEach(k=>delete CHORDS[k]);
+  Object.entries(cloneData(BUILTIN_CHORDS_SNAPSHOT)).forEach(([tuningName,shapes])=>{
+    CHORDS[tuningName]=shapes;
+  });
+}
+
+function applyCustomChordShapes(shapesByTuning){
+  Object.entries(shapesByTuning||{}).forEach(([tuningName,shapes])=>{
+    if(!CHORDS[tuningName])CHORDS[tuningName]={};
+    Object.entries(shapes||{}).forEach(([name,shape])=>{
+      CHORDS[tuningName][name]=shape;
+    });
+  });
+}
+
+function registerCustomChordShape(tuningName,name,shape){
+  if(!CHORDS[tuningName])CHORDS[tuningName]={};
+  CHORDS[tuningName][name]=shape;
+  if(!customChordShapes[tuningName])customChordShapes[tuningName]={};
+  customChordShapes[tuningName][name]=cloneData(shape);
+}
+
+function serializeSong(){
+  return {
+    version:1,
+    title:document.getElementById('song-title').value||'',
+    tuning,capo,key,mode,typeFilter,
+    customChordShapes:cloneData(customChordShapes||{}),
+    sections:Array.from(document.querySelectorAll('.section-block')).map(sec=>({
+      label:sec.querySelector('.section-label-input')?.value||'',
+      lines:Array.from(sec.querySelectorAll('.lyric-line-wrapper')).map(wrap=>{
+        const row=wrap.querySelector('.chord-row');
+        return {
+          lyric:wrap.querySelector('.lyric-text-input')?.value||'',
+          chords:Array.from(row.querySelectorAll('.chord-marker'))
+            .filter(m=>m.dataset.chord)
+            .map(m=>({pct:parseFloat(m.dataset.pct)||0,chord:m.dataset.chord}))
+        };
+      })
+    }))
+  };
+}
+
+function restoreSong(data,options={}){
+  const preserveHistory=!!options.preserveHistory;
+  const song=data&&typeof data==='object'?data:createBlankSongData();
+  const previousRestoring=isRestoring;
+  isRestoring=true;
+  try{
+    resetChordLibraryToBuiltins();
+    customChordShapes=cloneData(song.customChordShapes||{});
+    applyCustomChordShapes(customChordShapes);
+
+    document.getElementById('song-title').value=song.title||'';
+    tuning=song.tuning||'standard';
+    capo=Number.isInteger(song.capo)?song.capo:0;
+    key=song.key||'G';
+    mode=song.mode||'major';
+    typeFilter=song.typeFilter||'all';
+
+    document.getElementById('sections-container').innerHTML='';
+    sectionCounter=0;markerCounter=0;selectedMarker=null;dragSourceRow=null;
+    hideDiagram();
+    document.getElementById('picker-status').textContent='Click a marker to name it';
+
+    buildCapoRow();buildKeyRow();buildModeRow();buildTypeRow();buildChordGrid();
+
+    const sections=Array.isArray(song.sections)&&song.sections.length?song.sections:createBlankSongData().sections;
+    sections.forEach(section=>addSectionFromData(section));
+
+    updateAllMarkerSoundingTitles();
+    updateSummary();
+    updateLiveKeyContext();
+    updateUndoRedoButtons();
+  }catch(err){
+    console.error('restoreSong failed',err);
+    alert('Could not restore this song. The saved data may be damaged.');
+  }finally{
+    isRestoring=previousRestoring;
+  }
+
+  if(!preserveHistory){
+    initialiseHistory();
+  }
+}
+
+function safeSetItem(keyName,value){
+  try{localStorage.setItem(keyName,value);return true;}
+  catch(err){console.warn('localStorage save failed',err);return false;}
+}
+
+function safeGetItem(keyName){
+  try{return localStorage.getItem(keyName);}
+  catch(err){console.warn('localStorage read failed',err);return null;}
+}
+
+function updateAutosaveStatus(message){
+  const el=document.getElementById('autosave-status');
+  if(!el)return;
+  if(message){el.textContent=message;return;}
+  el.textContent='Saved '+new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+}
+
+function saveAutosaveNow(){
+  if(isRestoring)return;
+  const ok=safeSetItem(AUTOSAVE_KEY, JSON.stringify(serializeSong()));
+  updateAutosaveStatus(ok?null:'Autosave unavailable');
+}
+
+function scheduleAutosave(){
+  if(isRestoring)return;
+  clearTimeout(autosaveTimer);
+  autosaveTimer=setTimeout(saveAutosaveNow,500);
+}
+
+function tryRestoreAutosave(){
+  const raw=safeGetItem(AUTOSAVE_KEY);
+  if(!raw)return false;
+  try{
+    restoreSong(JSON.parse(raw), {preserveHistory:true});
+    updateAutosaveStatus('Autosave restored');
+    return true;
+  }catch(err){
+    console.warn('Could not restore autosave',err);
+    updateAutosaveStatus('Autosave unreadable');
+    return false;
+  }
+}
+
+function getSavedSongs(){
+  const raw=safeGetItem(SONGS_KEY);
+  if(!raw)return {};
+  try{return JSON.parse(raw)||{};}
+  catch(err){console.warn('Saved songs list unreadable',err);return {};}
+}
+
+function saveSong(){
+  const songs=getSavedSongs();
+  const current=serializeSong();
+  const suggested=current.title||current.savedName||'Untitled Song';
+  const name=prompt('Save song as:', suggested);
+  if(!name)return;
+  current.savedName=name;
+  current.savedAt=Date.now();
+  songs[name]=current;
+  const ok=safeSetItem(SONGS_KEY, JSON.stringify(songs));
+  safeSetItem(AUTOSAVE_KEY, JSON.stringify(current));
+  updateAutosaveStatus(ok?'Saved song':'Save unavailable');
+  commitHistory('save song');
+}
+
+function loadSong(){
+  const songs=getSavedSongs();
+  const names=Object.keys(songs).sort((a,b)=>(songs[b].savedAt||0)-(songs[a].savedAt||0));
+  if(!names.length){alert('No saved songs yet');return;}
+  const choice=prompt('Load song by typing its name:
+
+'+names.join('
+'));
+  if(!choice)return;
+  if(!songs[choice]){alert('Song not found. Make sure you type the name exactly.');return;}
+  restoreSong(songs[choice], {preserveHistory:true});
+  commitHistory('load song');
+  saveAutosaveNow();
+}
+
+function newSong(){
+  if(!confirm('Start a new song? Your current song is autosaved, but save a named copy first if you want to keep it clearly.'))return;
+  restoreSong(createBlankSongData(), {preserveHistory:true});
+  commitHistory('new song');
+  saveAutosaveNow();
+}
+
+function commitHistory(label='edit'){
+  if(isRestoring||isApplyingHistory||suppressHistory)return;
+  const snapshot=JSON.stringify(serializeSong());
+  if(historyStack[historyIndex]?.snapshot===snapshot){
+    scheduleAutosave();
+    return;
+  }
+  historyStack=historyStack.slice(0,historyIndex+1);
+  historyStack.push({label,snapshot,time:Date.now()});
+  if(historyStack.length>HISTORY_LIMIT){historyStack.shift();}
+  historyIndex=historyStack.length-1;
+  updateUndoRedoButtons();
+  scheduleAutosave();
+}
+
+function initialiseHistory(){
+  historyStack=[];historyIndex=-1;
+  const snapshot=JSON.stringify(serializeSong());
+  historyStack.push({label:'initial state',snapshot,time:Date.now()});
+  historyIndex=0;
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons(){
+  const undoBtn=document.getElementById('undo-btn');
+  const redoBtn=document.getElementById('redo-btn');
+  if(undoBtn)undoBtn.disabled=historyIndex<=0;
+  if(redoBtn)redoBtn.disabled=historyIndex>=historyStack.length-1;
+}
+
+function undoSong(){
+  if(historyIndex<=0)return;
+  historyIndex--;
+  isApplyingHistory=true;
+  restoreSong(JSON.parse(historyStack[historyIndex].snapshot), {preserveHistory:true});
+  isApplyingHistory=false;
+  updateUndoRedoButtons();
+  saveAutosaveNow();
+}
+
+function redoSong(){
+  if(historyIndex>=historyStack.length-1)return;
+  historyIndex++;
+  isApplyingHistory=true;
+  restoreSong(JSON.parse(historyStack[historyIndex].snapshot), {preserveHistory:true});
+  isApplyingHistory=false;
+  updateUndoRedoButtons();
+  saveAutosaveNow();
+}
+
+function scheduleHistoryCommit(label='text edit'){
+  if(isRestoring||isApplyingHistory||suppressHistory)return;
+  clearTimeout(historyInputTimer);
+  historyInputTimer=setTimeout(()=>commitHistory(label),600);
+}
+
+function bindInputPersistenceListeners(){
+  document.addEventListener('input',e=>{
+    if(e.target.matches('.lyric-text-input')||e.target.matches('.section-label-input')||e.target.matches('#song-title')){
+      scheduleHistoryCommit('text edit');
+      scheduleAutosave();
+    }
+  });
 }
 
 // ═══ CUSTOM CHORD BUILDER ═══
@@ -1050,9 +1397,8 @@ function applyCustomWithDiagram(){
     fr:customFretStart,
     fingering:customDots.map(({s,f})=>'String '+s+' fret '+f).join('  ')||'Open'
   };
-  // Register in current tuning so diagram shows up
-  if(!CHORDS[tuning])CHORDS[tuning]={};
-  CHORDS[tuning][name]=shape;
+  // Register in current tuning so diagram shows up and can be saved/restored.
+  registerCustomChordShape(tuning,name,shape);
 
   nameMarker(selectedMarker,name);
   // reset builder
@@ -1067,6 +1413,14 @@ function applyCustom(){
 }
 
 document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&document.activeElement.tagName!=='INPUT'){
+    e.preventDefault();
+    if(e.shiftKey)redoSong(); else undoSong();
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='y'&&document.activeElement.tagName!=='INPUT'){
+    e.preventDefault();redoSong();return;
+  }
   if(e.key==='Escape'){
     if(selectedMarker){selectedMarker.style.outline='';selectedMarker=null;}
     document.getElementById('picker-status').textContent='Click a marker to name it';
