@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chord Lock — Stage 4</title>
+<title>Chord Lock — Stage 4 Capo Context</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -17,6 +17,12 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
 .tuning-btn{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:500;padding:.3rem .7rem;border-radius:100px;border:1px solid var(--border-mid);background:transparent;color:var(--ink-muted);cursor:pointer;transition:all .15s}
 .tuning-btn:hover{border-color:var(--ink);color:var(--ink)}
 .tuning-btn.active{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.capo-row{display:flex;gap:.25rem;align-items:center;flex-wrap:wrap}
+.capo-btn{font-family:'DM Mono',monospace;font-size:.7rem;font-weight:500;padding:.25rem .5rem;border-radius:6px;border:1px solid var(--border-mid);background:transparent;color:var(--ink-muted);cursor:pointer;transition:all .12s;min-width:28px;text-align:center}
+.capo-btn:hover{border-color:var(--amber);color:var(--amber);background:var(--amber-light)}
+.capo-btn.active{background:var(--amber);color:white;border-color:var(--amber)}
+.summary-sound{font-size:.62rem;color:var(--ink-faint);font-style:italic}
+.pitch-sounding-name{font-size:.62rem;color:var(--ink-muted);white-space:nowrap;margin-left:-.25rem}
 .header-actions{display:flex;gap:.6rem;align-items:center}
 .stage-badge{font-size:.7rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:var(--teal-light);color:var(--teal);border:1px solid rgba(15,110,86,.2);padding:.25rem .75rem;border-radius:100px}
 .btn{font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;padding:.45rem 1rem;border-radius:100px;border:1px solid var(--border-mid);background:transparent;color:var(--ink);cursor:pointer;transition:background .15s,border-color .15s,transform .1s;display:inline-flex;align-items:center;gap:.4rem}
@@ -163,6 +169,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
     <button class="tuning-btn active" onclick="setTuning('standard',this)">Standard</button>
     <button class="tuning-btn" onclick="setTuning('openg',this)">Open G</button>
     <button class="tuning-btn" onclick="setTuning('dadgad',this)">DADGAD</button>
+    <span class="tuning-label" style="margin-left:.6rem">Capo:</span>
+    <div class="capo-row" id="capo-row"></div>
   </div>
   <div class="header-actions">
     <span class="stage-badge">Stage 4</span>
@@ -378,15 +386,58 @@ const TYPES=[
 
 // ═══ STATE ═══
 let selectedMarker=null,markerCounter=0,sectionCounter=0,dragSourceRow=null;
-let tuning='standard',key='G',mode='major',typeFilter='all';
+let tuning='standard',key='G',mode='major',typeFilter='all',capo=0;
 
 // ═══ INIT ═══
 function init(){
-  buildKeyRow();buildModeRow();buildTypeRow();buildChordGrid();
+  buildCapoRow();buildKeyRow();buildModeRow();buildTypeRow();buildChordGrid();
   addSection('Verse 1');
   document.getElementById('editor-pane').addEventListener('click',()=>{
     setTimeout(()=>document.getElementById('hint').classList.add('hidden'),7000);
   },{once:true});
+  updateLiveKeyContext();
+}
+
+
+// ═══ CAPO ═══
+function buildCapoRow(){
+  const row=document.getElementById('capo-row');
+  if(!row)return;
+  row.innerHTML='';
+  for(let i=0;i<=7;i++){
+    const b=document.createElement('button');
+    b.className='capo-btn'+(i===capo?' active':'');
+    b.textContent=i;
+    b.title=i===0?'No capo':'Capo '+i;
+    b.onclick=()=>setCapo(i,b);
+    row.appendChild(b);
+  }
+}
+
+function setCapo(value,btn){
+  capo=Number(value)||0;
+  document.querySelectorAll('.capo-btn').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  updateAllMarkerSoundingTitles();
+  updateSummary();
+  updateLiveKeyContext();
+  if(selectedMarker?.dataset.chord)showDiagram(selectedMarker.dataset.chord);
+}
+
+function updateAllMarkerSoundingTitles(){
+  document.querySelectorAll('.chord-marker[data-chord]').forEach(m=>{
+    const ch=m.dataset.chord;
+    if(!ch){m.title='';return;}
+    const sounding=getSoundingChord(ch);
+    m.dataset.sounding=sounding;
+    m.title=capo>0&&sounding!==ch?`Written ${ch} · sounds ${sounding} with capo ${capo}`:'';
+  });
+}
+
+function updateLiveKeyContext(){
+  const lockedWritten=getLockedChordNames();
+  const lockedSounding=lockedWritten.map(ch=>getSoundingChord(ch)).filter(Boolean);
+  updateKeyContextStatus(detectKey(lockedSounding), lockedWritten.length);
 }
 
 // ═══ TUNING ═══
@@ -397,6 +448,7 @@ function setTuning(t,btn){
   buildChordGrid();
   if(selectedMarker?.dataset.chord)showDiagram(selectedMarker.dataset.chord);
   updateSummary();
+  updateLiveKeyContext();
 }
 
 // ═══ KEY ═══
@@ -514,7 +566,8 @@ function showDiagram(chord){
   if(!chord||!sh){panel.classList.remove('visible');return;}
   panel.classList.add('visible');
   document.getElementById('diag-name').textContent=chord;
-  document.getElementById('diag-tuning').textContent=TUNING_LABELS[tuning];
+  const sounding=getSoundingChord(chord);
+  document.getElementById('diag-tuning').textContent=capo>0&&sounding!==chord?`${TUNING_LABELS[tuning]} · capo ${capo} · sounds ${sounding}`:TUNING_LABELS[tuning];
   document.getElementById('diag-fingering').textContent=sh.fingering||'';
   drawDiag(document.getElementById('diag-svg'),chord,170,148,tuning);
 }
@@ -608,7 +661,7 @@ function addSection(label){
   document.getElementById('sections-container').appendChild(block);
   addLine(id);addLine(id);addLine(id);
 }
-function removeSection(id){document.getElementById(id)?.remove();updateSummary();}
+function removeSection(id){document.getElementById(id)?.remove();updateSummary();updateLiveKeyContext();}
 
 function addLine(secId,chordsData){
   const sec=document.getElementById(secId);
@@ -703,7 +756,8 @@ function selectMarker(m,e){
   selectedMarker=m;
   m.style.outline='2px solid var(--amber)';m.style.outlineOffset='2px';
   const ch=m.dataset.chord;
-  document.getElementById('picker-status').innerHTML=ch?`Selected: <strong>${ch}</strong> — pick to change`:'Selected — pick a chord below';
+  const sounding=ch?getSoundingChord(ch):'';
+  document.getElementById('picker-status').innerHTML=ch?`Selected: <strong>${ch}</strong>${capo>0&&sounding!==ch?' · sounds <strong>'+sounding+'</strong>':''} — pick to change`:'Selected — pick a chord below';
   document.querySelectorAll('.chord-btn').forEach(b=>b.classList.toggle('active',b.textContent===ch));
   document.getElementById('custom-input').value=ch||'';
   if(ch)showDiagram(ch); else hideDiagram();
@@ -712,18 +766,23 @@ function removeMarker(m){
   m.remove();selectedMarker=null;
   document.getElementById('picker-status').textContent='Click a marker to name it';
   document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('active'));
-  hideDiagram();updateSummary();
+  hideDiagram();updateSummary();updateLiveKeyContext();
 }
 function applyChord(ch){if(selectedMarker)nameMarker(selectedMarker,ch);}
 function nameMarker(m,ch,deselect=true){
   m.dataset.chord=ch;m.querySelector('.marker-label').textContent=ch;
+  const sounding=getSoundingChord(ch);
+  m.dataset.sounding=sounding;
+  m.title=capo>0&&sounding!==ch?`Written ${ch} · sounds ${sounding} with capo ${capo}`:'';
   m.classList.remove('unnamed');m.classList.add('named');
   if(deselect){
     m.style.outline='';selectedMarker=null;
     document.getElementById('picker-status').textContent='Click a marker to name it';
     document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('active'));
-    hideDiagram();updateSummary();
+    hideDiagram();
   }
+  updateSummary();
+  updateLiveKeyContext();
 }
 
 // ═══ SUMMARY ═══
@@ -737,10 +796,13 @@ function updateSummary(){
   list.innerHTML=items.map(ch=>{
     const sid='sv-'+ch.replace(/[^a-zA-Z0-9]/g,'_');
     const hasDiag=!!shapes[ch];
+    const sounding=getSoundingChord(ch);
+    const soundLine=capo>0&&sounding!==ch?`<span class="summary-sound">sounds ${escapeHTML(sounding)}</span>`:'';
     return `<li class="summary-item">
-      <span class="summary-pill">${ch}</span>
+      <span class="summary-pill">${escapeHTML(ch)}</span>
       <div class="summary-right">
         ${hasDiag?`<svg id="${sid}" width="46" height="40" viewBox="0 0 46 40" xmlns="http://www.w3.org/2000/svg"></svg>`:'<span style="font-size:.62rem;color:var(--ink-faint);font-style:italic">no diagram</span>'}
+        ${soundLine}
         <span class="summary-count">${named.filter(m=>m.dataset.chord===ch).length}× in song</span>
       </div>
     </li>`;
@@ -761,7 +823,16 @@ function clearAll(){
 }
 function exportSheet(){
   const title=document.getElementById('song-title').value||'Untitled';
-  let out=title+'\n'+'='.repeat(title.length)+'\nTuning: '+TUNING_LABELS[tuning]+'\nKey: '+key+' '+mode+'\n\n';
+  const lockedWritten=getLockedChordNames();
+  const lockedSounding=lockedWritten.map(ch=>getSoundingChord(ch)).filter(Boolean);
+  const keyContext=detectKey(lockedSounding);
+  let out=title+'\n'+'='.repeat(title.length)+'\n';
+  out+='Tuning: '+TUNING_LABELS[tuning]+'\n';
+  out+='Capo: '+capo+'\n';
+  out+='Written key setting: '+key+' '+mode+'\n';
+  if(keyContext)out+='Detected sounding key: '+keyContext.key+' '+keyContext.mode+'\n';
+  out+='\n';
+
   document.querySelectorAll('.section-block').forEach(sec=>{
     const lbl=sec.querySelector('.section-label-input').value;
     if(lbl)out+='['+lbl+']\n';
@@ -769,7 +840,14 @@ function exportSheet(){
       const row=w.querySelector('.chord-row');
       const txt=w.querySelector('.lyric-text-input').value;
       const mks=Array.from(row.querySelectorAll('.chord-marker')).filter(m=>m.dataset.chord).sort((a,b)=>parseFloat(a.dataset.pct)-parseFloat(b.dataset.pct));
-      if(mks.length)out+=mks.map(m=>m.dataset.chord).join('  ')+'\n';
+      if(mks.length){
+        const written=mks.map(m=>m.dataset.chord);
+        out+=written.join('  ')+'\n';
+        if(capo>0){
+          const sounding=written.map(ch=>getSoundingChord(ch));
+          out+='(sounds: '+sounding.join('  ')+')\n';
+        }
+      }
       if(txt)out+=txt+'\n';
     });
     out+='\n';
@@ -1035,6 +1113,136 @@ const CHORD_NOTES = {
   Cadd9:[0,4,7,2],  // C E G D
   Gsus4:[7,0,2],    // G C D
 };
+;
+
+// Capo/transposition helpers.
+// Markers store written guitar shapes; music logic uses the sounding chord after capo.
+const NOTE_TO_INDEX = {
+  C:0,'B#':0,'C#':1,Db:1,D:2,'D#':3,Eb:3,E:4,Fb:4,'E#':5,F:5,'F#':6,Gb:6,G:7,'G#':8,Ab:8,A:9,'A#':10,Bb:10,B:11,Cb:11
+};
+const INDEX_TO_NOTE = ['C','C#','D','Eb','E','F','F#','G','G#','A','Bb','B'];
+
+function escapeHTML(value){
+  return String(value).replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function escapeAttr(value){return escapeHTML(value).replace(/`/g,'&#96;');}
+
+function parseChordName(chordName){
+  if(!chordName)return null;
+  const trimmed=String(chordName).trim();
+  const parts=trimmed.split('/');
+  const main=parts[0];
+  const bass=parts[1]||null;
+  const match=main.match(/^([A-G](?:#|b)?)(.*)$/);
+  if(!match)return null;
+  const bassMatch=bass?bass.match(/^([A-G](?:#|b)?)$/):null;
+  return {root:match[1],suffix:match[2]||'',bass:bassMatch?bassMatch[1]:null,raw:trimmed};
+}
+
+function noteIndex(note){
+  return Object.prototype.hasOwnProperty.call(NOTE_TO_INDEX,note)?NOTE_TO_INDEX[note]:null;
+}
+
+function noteNameFromIndex(index){
+  return INDEX_TO_NOTE[((index%12)+12)%12];
+}
+
+function transposeRoot(root,semitones){
+  const idx=noteIndex(root);
+  if(idx===null)return root;
+  return noteNameFromIndex(idx+semitones);
+}
+
+function transposeChordName(chordName,semitones){
+  const parsed=parseChordName(chordName);
+  if(!parsed)return chordName;
+  const main=transposeRoot(parsed.root,semitones)+parsed.suffix;
+  const bass=parsed.bass?'/'+transposeRoot(parsed.bass,semitones):'';
+  return main+bass;
+}
+
+function getSoundingChord(writtenChord,capoValue=capo){
+  if(!writtenChord)return writtenChord;
+  if(!capoValue)return writtenChord;
+  return transposeChordName(writtenChord,capoValue);
+}
+
+function chordForKey(chordName){
+  const parsed=parseChordName(chordName);
+  if(!parsed)return chordName;
+  const suffix=(parsed.suffix||'').toLowerCase();
+  const isMinor = /^m(?!aj)/.test(suffix) || suffix.includes('min');
+  return parsed.root+(isMinor?'m':'');
+}
+
+function getChordNoteIndices(chordName){
+  const parsed=parseChordName(chordName);
+  if(!parsed){
+    return CHORD_NOTES[chordName] || null;
+  }
+
+  const rootIdx=noteIndex(parsed.root);
+  if(rootIdx===null)return CHORD_NOTES[chordName] || null;
+
+  const suffix=(parsed.suffix||'').toLowerCase();
+  let intervals;
+
+  if(suffix.includes('dim')) intervals=[0,3,6];
+  else if(suffix.includes('sus2')) intervals=[0,2,7];
+  else if(suffix.includes('sus4') || suffix.includes('sus')) intervals=[0,5,7];
+  else if(/^m(?!aj)/.test(suffix) || suffix.includes('min')) intervals=[0,3,7];
+  else intervals=[0,4,7];
+
+  if(suffix.includes('maj7')) {
+    if(intervals[1]===3) intervals=[0,3,7,11];
+    else intervals=[0,4,7,11];
+  } else if(suffix.includes('7')) {
+    if(intervals[1]===3) intervals=[0,3,7,10];
+    else intervals=[0,4,7,10];
+  }
+
+  if(suffix.includes('add9') && !intervals.includes(2)) intervals.push(2);
+  if(suffix.includes('6') && !suffix.includes('sus') && !intervals.includes(9)) intervals.push(9);
+
+  return intervals.map(i=>((rootIdx+i)%12+12)%12);
+}
+
+const KEY_CONTEXT_DATA={
+  major:{
+    C:['C','Dm','Em','F','G','Am'],
+    Db:['Db','Ebm','Fm','Gb','Ab','Bbm'],
+    D:['D','Em','F#m','G','A','Bm'],
+    Eb:['Eb','Fm','Gm','Ab','Bb','Cm'],
+    E:['E','F#m','G#m','A','B','C#m'],
+    F:['F','Gm','Am','Bb','C','Dm'],
+    'F#':['F#','G#m','A#m','B','C#','D#m'],
+    G:['G','Am','Bm','C','D','Em'],
+    Ab:['Ab','Bbm','Cm','Db','Eb','Fm'],
+    A:['A','Bm','C#m','D','E','F#m'],
+    Bb:['Bb','Cm','Dm','Eb','F','Gm'],
+    B:['B','C#m','D#m','E','F#','G#m']
+  },
+  minor:{
+    Am:['Am','Bdim','C','Dm','Em','F','G'],
+    Bbm:['Bbm','Cdim','Db','Ebm','Fm','Gb','Ab'],
+    Bm:['Bm','C#dim','D','Em','F#m','G','A'],
+    Cm:['Cm','Ddim','Eb','Fm','Gm','Ab','Bb'],
+    'C#m':['C#m','D#dim','E','F#m','G#m','A','B'],
+    Dm:['Dm','Edim','F','Gm','Am','Bb','C'],
+    Ebm:['Ebm','Fdim','Gb','Abm','Bbm','Cb','Db'],
+    Em:['Em','F#dim','G','Am','Bm','C','D'],
+    Fm:['Fm','Gdim','Ab','Bbm','Cm','Db','Eb'],
+    'F#m':['F#m','G#dim','A','Bm','C#m','D','E'],
+    Gm:['Gm','Adim','Bb','Cm','Dm','Eb','F'],
+    'G#m':['G#m','A#dim','B','C#m','D#m','E','F#']
+  }
+};
+
+function getCandidateWrittenChords(){
+  const shapes=CHORDS[tuning]||CHORDS.standard;
+  const names=new Set([...Object.keys(CHORD_NOTES),...Object.keys(shapes)]);
+  return Array.from(names).filter(name=>getChordNoteIndices(getSoundingChord(name)));
+}
 
 let audioCtx = null;
 let analyserNode = null;
@@ -1231,7 +1439,7 @@ function analysePitchBuffer() {
     `Detected ${sortedNotes.join(', ')} — ${scoredChords.length} chord matches`;
 }
 
-// ── Stage 4 context-aware suggestion scoring ───────────────────────────────
+// ── Stage 4 context-aware suggestion scoring + capo-aware sounding logic ────
 const TRANSITIONS = {
   G:  { D:1.0, Em:1.0, C:0.9, Am:0.8, Bm:0.7, G7:0.6 },
   C:  { G:1.0, F:0.9, Am:0.9, Dm:0.8, Em:0.7 },
@@ -1245,6 +1453,16 @@ const TRANSITIONS = {
   Bm: { Em:1.0, G:0.9, D:0.8, A:0.8 },
 };
 
+const DEGREE_TRANSITIONS = {
+  0:{4:1.0,5:1.0,3:0.9,1:0.8,2:0.7}, // I/i → V, vi, IV, ii, iii
+  1:{4:1.0,3:0.8,0:0.7},               // ii → V, IV, I
+  2:{5:0.9,3:0.8,0:0.6},               // iii → vi, IV, I
+  3:{0:1.0,4:0.9,1:0.8},               // IV → I, V, ii
+  4:{0:1.0,5:0.8},                     // V → I, vi
+  5:{3:1.0,1:0.9,4:0.8,0:0.8},         // vi → IV, ii, V, I
+  6:{0:0.9,4:0.6}                      // vii° → I, V
+};
+
 function getLockedChordNames() {
   return Array.from(document.querySelectorAll('.chord-marker.named[data-chord]'))
     .map(m => m.dataset.chord)
@@ -1254,11 +1472,12 @@ function getLockedChordNames() {
 function detectKey(chordNames) {
   if (!chordNames || chordNames.length === 0) return null;
 
+  const keyChordsForScoring = chordNames.map(chordForKey).filter(Boolean);
   const scores = {};
-  Object.entries(KEY_DATA).forEach(([keyMode, keys]) => {
+  Object.entries(KEY_CONTEXT_DATA).forEach(([keyMode, keys]) => {
     Object.entries(keys).forEach(([keyName, keyChords]) => {
       const id = keyName + '_' + keyMode;
-      scores[id] = chordNames.filter(ch => keyChords.includes(ch)).length;
+      scores[id] = keyChordsForScoring.filter(ch => keyChords.includes(ch)).length;
     });
   });
 
@@ -1275,27 +1494,51 @@ function detectKey(chordNames) {
   return {
     key: keyName,
     mode: keyMode,
-    chords: KEY_DATA[keyMode][keyName],
+    chords: KEY_CONTEXT_DATA[keyMode][keyName],
     lockedCount: chordNames.length,
     matchedCount: best[1]
   };
 }
 
-function getPreviousChord(markerEl) {
+function getPreviousChord(markerEl,useSounding=false) {
   if (!markerEl) return null;
 
-  const allMarkers = Array.from(
-    document.querySelectorAll('.chord-marker.named[data-chord]')
-  ).filter(m => m.dataset.chord);
-
+  // Important: include unnamed markers so an empty highlighted marker can still
+  // look backwards to the previous named/locked chord.
+  const allMarkers = Array.from(document.querySelectorAll('.chord-marker'));
   const idx = allMarkers.indexOf(markerEl);
-  if (idx <= 0) return null;
-  return allMarkers[idx - 1].dataset.chord;
+  if (idx === -1) return null;
+
+  for(let i=idx-1;i>=0;i--){
+    const ch=allMarkers[i].dataset.chord;
+    if(ch)return useSounding?getSoundingChord(ch):ch;
+  }
+  return null;
 }
 
-function getTransitionScore(fromChord, toChord) {
-  if (!fromChord || !TRANSITIONS[fromChord]) return 0.5;
-  return TRANSITIONS[fromChord][toChord] || 0.2;
+function getTransitionScore(fromChord, toChord, keyContext=null) {
+  if(!fromChord || !toChord)return 0.5;
+
+  const fromBase=chordForKey(fromChord);
+  const toBase=chordForKey(toChord);
+
+  // Use exact table where it exists.
+  if(TRANSITIONS[fromChord] && TRANSITIONS[fromChord][toChord])return TRANSITIONS[fromChord][toChord];
+  if(TRANSITIONS[fromBase] && TRANSITIONS[fromBase][toBase])return TRANSITIONS[fromBase][toBase];
+
+  // Capo can move us into keys not present in the old transition table, so use
+  // scale-degree movement when a sounding key has been detected.
+  if(keyContext){
+    const fromDeg=keyContext.chords.indexOf(fromBase);
+    const toDeg=keyContext.chords.indexOf(toBase);
+    if(fromDeg>=0 && toDeg>=0){
+      return (DEGREE_TRANSITIONS[fromDeg] && DEGREE_TRANSITIONS[fromDeg][toDeg]) || 0.45;
+    }
+    if(toDeg>=0)return 0.55;
+    return 0.25;
+  }
+
+  return 0.5;
 }
 
 function updateKeyContextStatus(keyContext, lockedCount) {
@@ -1304,31 +1547,35 @@ function updateKeyContextStatus(keyContext, lockedCount) {
 
   if (keyContext) {
     el.classList.remove('ambiguous');
-    el.textContent = `Detected key: ${keyContext.key} ${keyContext.mode}  (from ${lockedCount} locked chord${lockedCount === 1 ? '' : 's'})`;
+    el.textContent = `Detected sounding key: ${keyContext.key} ${keyContext.mode}  (from ${lockedCount} locked chord${lockedCount === 1 ? '' : 's'})`;
   } else if (lockedCount > 0) {
     el.classList.add('ambiguous');
-    el.textContent = `${lockedCount} locked chord${lockedCount === 1 ? '' : 's'} — key still ambiguous`;
+    el.textContent = `${lockedCount} locked chord${lockedCount === 1 ? '' : 's'} — sounding key still ambiguous`;
   } else {
     el.classList.add('ambiguous');
     el.textContent = 'No locked chord context yet';
   }
 }
 
-// ── Score every known chord using pitch + locked key context + progression ─
+// ── Score every known written shape using sounding pitch + sounding key context + progression ─
 function scoreChords(detectedIndices, selectedMarkerEl = null) {
   const results = [];
   const shapes = CHORDS[tuning] || CHORDS.standard;
 
-  const lockedChords = getLockedChordNames();
-  const keyContext = detectKey(lockedChords);
-  const prevChord = getPreviousChord(selectedMarkerEl);
+  const lockedWritten = getLockedChordNames();
+  const lockedSounding = lockedWritten.map(ch => getSoundingChord(ch)).filter(Boolean);
+  const keyContext = detectKey(lockedSounding);
+  const prevWritten = getPreviousChord(selectedMarkerEl,false);
+  const prevSounding = getPreviousChord(selectedMarkerEl,true);
 
-  updateKeyContextStatus(keyContext, lockedChords.length);
+  updateKeyContextStatus(keyContext, lockedWritten.length);
 
-  Object.keys(CHORD_NOTES).forEach(chordName => {
-    const chordIndices = CHORD_NOTES[chordName];
+  getCandidateWrittenChords().forEach(writtenName => {
+    const soundingName = getSoundingChord(writtenName);
+    const chordIndices = getChordNoteIndices(soundingName);
+    if(!chordIndices || !chordIndices.length)return;
 
-    // LAYER 1: pitch match
+    // LAYER 1: pitch match against sounding notes, because the mic hears the real pitch.
     let hits = 0;
     detectedIndices.forEach(di => {
       if (chordIndices.includes(di)) hits++;
@@ -1339,26 +1586,30 @@ function scoreChords(detectedIndices, selectedMarkerEl = null) {
     const rootBonus = detectedIndices[0] === chordIndices[0] ? 0.15 : 0;
     const pitchScore = Math.min(1, (hits / detectedIndices.length) + rootBonus);
 
-    // LAYER 2: key context from already locked/named markers
+    // LAYER 2: key context from sounding versions of already locked/named markers.
+    const soundingKeyChord=chordForKey(soundingName);
     let keyScore = 0.5;
     if (keyContext) {
-      keyScore = keyContext.chords.includes(chordName) ? 1.0 : 0.2;
+      keyScore = keyContext.chords.includes(soundingKeyChord) ? 1.0 : 0.2;
     }
 
-    // LAYER 3: naturalness from previous locked chord
-    const transScore = getTransitionScore(prevChord, chordName);
+    // LAYER 3: naturalness from previous locked chord, judged in sounding chords.
+    const transScore = getTransitionScore(prevSounding, soundingName, keyContext);
 
     const finalScore = (pitchScore * 0.5) + (keyScore * 0.3) + (transScore * 0.2);
 
     results.push({
-      name: chordName,
+      name: writtenName,
+      soundingName,
       score: finalScore,
       pitchScore,
       keyScore,
       transScore,
       hits,
-      inKey: keyContext ? keyContext.chords.includes(chordName) : null,
-      hasDiagram: !!shapes[chordName]
+      inKey: keyContext ? keyContext.chords.includes(soundingKeyChord) : null,
+      hasDiagram: !!shapes[writtenName],
+      previousWritten: prevWritten,
+      previousSounding: prevSounding
     });
   });
 
@@ -1383,17 +1634,25 @@ function showPitchSuggestions(chords) {
     const pct = Math.round((ch.score / maxScore) * 100);
     const isTop = i === 0;
     const badge = suggestionBadge(ch);
-    const title = `Why this chord?\nPitch match: ${Math.round(ch.pitchScore * 100)}%\nKey fit: ${Math.round(ch.keyScore * 100)}%\nTransition: ${Math.round(ch.transScore * 100)}%`;
-    return `<div class="pitch-suggestion-item${isTop ? ' top-match' : ''}" title="${title}" onclick="applyPitchChord('${ch.name}')">
-      <span class="pitch-match-name">${ch.name}</span>
+    const soundText = capo>0&&ch.soundingName!==ch.name ? `<span class="pitch-sounding-name">sounds ${escapeHTML(ch.soundingName)}</span>` : '';
+    const title = `Why this chord?\nWritten shape: ${ch.name}\nSounding chord: ${ch.soundingName}\nPitch match: ${Math.round(ch.pitchScore * 100)}%\nKey fit: ${Math.round(ch.keyScore * 100)}%\nTransition: ${Math.round(ch.transScore * 100)}%${ch.previousSounding?`\nPrevious sounding chord: ${ch.previousSounding}`:''}`;
+    return `<div class="pitch-suggestion-item${isTop ? ' top-match' : ''}" title="${escapeAttr(title)}" data-chord="${escapeAttr(ch.name)}" onclick="applyPitchChordFromSuggestion(this)">
+      <span class="pitch-match-name">${escapeHTML(ch.name)}</span>
+      ${soundText}
       <span class="pitch-context-badge ${badge.className}">${badge.text}</span>
       <div class="pitch-match-bar-wrap">
         <div class="pitch-match-bar" style="width:${pct}%"></div>
       </div>
       <span class="pitch-match-pct">${pct}%</span>
-      <button class="pitch-apply-btn" onclick="event.stopPropagation();applyPitchChord('${ch.name}')">Use</button>
+      <button class="pitch-apply-btn" onclick="event.stopPropagation();applyPitchChordFromSuggestion(this)">Use</button>
     </div>`;
   }).join('');
+}
+
+function applyPitchChordFromSuggestion(el){
+  const item=el.closest('.pitch-suggestion-item');
+  if(!item)return;
+  applyPitchChord(item.dataset.chord);
 }
 
 function applyPitchChord(chordName) {
@@ -1407,8 +1666,11 @@ function applyPitchChord(chordName) {
     }, 2000);
     return;
   }
+  const sounding=getSoundingChord(chordName);
   nameMarker(selectedMarker, chordName);
-  document.getElementById('hum-status').textContent = chordName + ' applied ✓';
+  document.getElementById('hum-status').textContent = capo>0&&sounding!==chordName
+    ? `${chordName} applied ✓ · sounds ${sounding}`
+    : chordName + ' applied ✓';
   // Show diagram
   showDiagram(chordName);
 }
