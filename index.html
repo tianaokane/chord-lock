@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chord Lock — Stage 2</title>
+<title>Chord Lock — Stage 3</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -114,6 +114,38 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
 .str-status-btn:hover{border-color:var(--ink);color:var(--ink)}
 .str-status-btn.muted{background:var(--red);color:white;border-color:var(--red)}
 .str-status-btn.open{background:var(--teal-light);color:var(--teal);border-color:var(--teal)}
+
+/* PITCH DETECTION */
+.hum-panel{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:.875rem}
+.hum-btn{width:100%;padding:.75rem;border-radius:10px;border:2px solid var(--border-mid);background:white;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:500;color:var(--ink);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.6rem;margin-bottom:.75rem;position:relative;overflow:hidden}
+.hum-btn:hover{border-color:var(--amber);color:var(--amber)}
+.hum-btn.listening{background:var(--red);border-color:var(--red);color:white;animation:humPulse 1s ease-in-out infinite}
+.hum-btn.analysing{background:var(--amber);border-color:var(--amber);color:white}
+@keyframes humPulse{0%,100%{box-shadow:0 0 0 0 rgba(192,57,43,0.4)}50%{box-shadow:0 0 0 8px rgba(192,57,43,0)}}
+.hum-mic-icon{font-size:1.1rem;transition:transform .2s}
+.hum-btn.listening .hum-mic-icon{animation:micBounce .5s ease-in-out infinite alternate}
+@keyframes micBounce{from{transform:scale(1)}to{transform:scale(1.2)}}
+
+.notes-detected{display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.6rem;min-height:24px;align-items:center}
+.note-pill{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:500;padding:.18rem .5rem;border-radius:100px;background:var(--amber-light);color:var(--amber);border:1px solid rgba(212,120,10,.25);animation:notePop .2s ease}
+@keyframes notePop{from{transform:scale(0.7);opacity:0}to{transform:scale(1);opacity:1}}
+.notes-label{font-size:.65rem;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.3rem}
+
+.pitch-suggestions{display:flex;flex-direction:column;gap:.4rem}
+.pitch-suggestion-item{display:flex;align-items:center;gap:.5rem;padding:.4rem .55rem;border-radius:8px;border:1px solid var(--border);background:white;cursor:pointer;transition:all .15s}
+.pitch-suggestion-item:hover{border-color:var(--teal);background:var(--teal-light)}
+.pitch-suggestion-item.top-match{border-color:var(--teal);background:var(--teal-light)}
+.pitch-match-name{font-family:'DM Mono',monospace;font-size:.78rem;font-weight:500;color:var(--ink);min-width:40px}
+.pitch-match-bar-wrap{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.pitch-match-bar{height:100%;background:var(--teal);border-radius:3px;transition:width .3s ease}
+.pitch-match-pct{font-size:.65rem;color:var(--ink-muted);min-width:28px;text-align:right}
+.pitch-apply-btn{font-size:.65rem;font-family:'DM Mono',monospace;padding:.15rem .4rem;border-radius:4px;border:1px solid rgba(15,110,86,.3);background:transparent;color:var(--teal);cursor:pointer;transition:all .12s;white-space:nowrap}
+.pitch-apply-btn:hover{background:var(--teal);color:white}
+
+.waveform-display{display:flex;align-items:center;justify-content:center;gap:2px;height:28px;margin-bottom:.5rem}
+.waveform-bar{width:3px;background:var(--amber);border-radius:2px;transition:height .1s ease}
+
+.hum-status{font-size:.72rem;color:var(--ink-muted);text-align:center;margin-bottom:.5rem;min-height:1em}
 </style>
 </head>
 <body>
@@ -127,7 +159,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
     <button class="tuning-btn" onclick="setTuning('dadgad',this)">DADGAD</button>
   </div>
   <div class="header-actions">
-    <span class="stage-badge">Stage 2</span>
+    <span class="stage-badge">Stage 3</span>
     <button class="btn" onclick="clearAll()">Clear</button>
     <button class="btn btn-primary" onclick="exportSheet()">Export ↗</button>
   </div>
@@ -142,6 +174,33 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
   </div>
 
   <div class="sidebar">
+
+    <!-- HUM / PITCH PANEL -->
+    <div class="hum-panel">
+      <p class="panel-title">Hum a melody</p>
+      <button class="hum-btn" id="hum-btn" onmousedown="startListening()" onmouseup="stopListening()" ontouchstart="startListening()" ontouchend="stopListening()">
+        <span class="hum-mic-icon">🎤</span>
+        <span id="hum-btn-label">Hold to hum</span>
+      </button>
+      <p class="hum-status" id="hum-status">Hold the button and hum a note</p>
+      <div class="waveform-display" id="waveform-display" style="display:none">
+        <div class="waveform-bar" id="wb1" style="height:4px"></div>
+        <div class="waveform-bar" id="wb2" style="height:8px"></div>
+        <div class="waveform-bar" id="wb3" style="height:14px"></div>
+        <div class="waveform-bar" id="wb4" style="height:10px"></div>
+        <div class="waveform-bar" id="wb5" style="height:6px"></div>
+        <div class="waveform-bar" id="wb6" style="height:16px"></div>
+        <div class="waveform-bar" id="wb7" style="height:8px"></div>
+        <div class="waveform-bar" id="wb8" style="height:12px"></div>
+        <div class="waveform-bar" id="wb9" style="height:5px"></div>
+      </div>
+      <div id="detected-notes-area" style="display:none">
+        <p class="notes-label">Notes heard</p>
+        <div class="notes-detected" id="notes-detected"></div>
+        <p class="notes-label" style="margin-top:.4rem">Chord matches</p>
+        <div class="pitch-suggestions" id="pitch-suggestions"></div>
+      </div>
+    </div>
 
     <!-- KEY PANEL -->
     <div class="panel">
@@ -930,6 +989,344 @@ document.addEventListener('keydown',e=>{
     hideDiagram();
   }
   if((e.key==='Delete'||e.key==='Backspace')&&selectedMarker&&document.activeElement.tagName!=='INPUT')removeMarker(selectedMarker);
+});
+
+// ═══════════════════════════════════════════════
+// PITCH DETECTION ENGINE
+// ═══════════════════════════════════════════════
+
+// All 12 note names
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+// Chord note membership — which notes (by semitone 0-11) are in each chord
+const CHORD_NOTES = {
+  G:    [7,11,2],   // G B D
+  Am:   [9,0,4],    // A C E
+  Bm:   [11,2,6],   // B D F#
+  C:    [0,4,7],    // C E G
+  D:    [2,6,9],    // D F# A
+  Em:   [4,7,11],   // E G B
+  F:    [5,9,0],    // F A C
+  A:    [9,1,4],    // A C# E
+  Bb:   [10,2,5],   // Bb D F
+  B:    [11,3,6],   // B D# F#
+  Dm:   [2,5,9],    // D F A
+  E:    [4,8,11],   // E G# B
+  Fm:   [5,8,0],    // F Ab C
+  Gm:   [7,10,2],   // G Bb D
+  Am7:  [9,0,4,7],  // A C E G
+  Dm7:  [2,5,9,0],  // D F A C
+  Em7:  [4,7,11,2], // E G B D
+  Cmaj7:[0,4,7,11], // C E G B
+  Gmaj7:[7,11,2,6], // G B D F#
+  D7:   [2,6,9,0],  // D F# A C
+  G7:   [7,11,2,5], // G B D F
+  A7:   [9,1,4,7],  // A C# E G
+  E7:   [4,8,11,2], // E G# B D
+  Dsus2:[2,6,9],    // D A E (approx)
+  Asus2:[9,4,6],    // A E B
+  Cadd9:[0,4,7,2],  // C E G D
+  Gsus4:[7,0,2],    // G C D
+};
+
+let audioCtx = null;
+let analyserNode = null;
+let micStream = null;
+let isListening = false;
+let pitchBuffer = [];       // collected frequency readings while holding
+let waveformAnimId = null;
+let silenceTimer = null;
+const SILENCE_DELAY = 800; // ms of silence before auto-analyse
+const CONFIDENCE_THRESHOLD = 0.92;
+const MIN_FREQ = 60;   // ~B1, below any singing voice
+const MAX_FREQ = 1200; // ~D6, above most singing
+
+// ── YIN pitch detection (pure JS, no library needed) ──────────────────────
+function yinPitch(buffer, sampleRate) {
+  const bufLen = buffer.length;
+  const halfLen = Math.floor(bufLen / 2);
+  const yinBuffer = new Float32Array(halfLen);
+
+  // Step 1: difference function
+  for (let tau = 0; tau < halfLen; tau++) {
+    let sum = 0;
+    for (let i = 0; i < halfLen; i++) {
+      const delta = buffer[i] - buffer[i + tau];
+      sum += delta * delta;
+    }
+    yinBuffer[tau] = sum;
+  }
+
+  // Step 2: cumulative mean normalised difference
+  yinBuffer[0] = 1;
+  let runningSum = 0;
+  for (let tau = 1; tau < halfLen; tau++) {
+    runningSum += yinBuffer[tau];
+    yinBuffer[tau] = runningSum > 0 ? yinBuffer[tau] * tau / runningSum : 1;
+  }
+
+  // Step 3: find first dip below threshold
+  const threshold = 1 - CONFIDENCE_THRESHOLD;
+  let tau = 2;
+  while (tau < halfLen) {
+    if (yinBuffer[tau] < threshold) {
+      while (tau + 1 < halfLen && yinBuffer[tau + 1] < yinBuffer[tau]) tau++;
+      break;
+    }
+    tau++;
+  }
+  if (tau === halfLen || yinBuffer[tau] >= threshold) return -1; // no pitch found
+
+  // Step 4: parabolic interpolation for accuracy
+  const better = tau < halfLen - 1
+    ? tau + (yinBuffer[tau + 1] - yinBuffer[tau - 1]) / (2 * (2 * yinBuffer[tau] - yinBuffer[tau - 1] - yinBuffer[tau + 1]))
+    : tau;
+
+  return sampleRate / better;
+}
+
+function freqToNoteName(freq) {
+  if (freq <= 0) return null;
+  const semitones = Math.round(12 * Math.log2(freq / 440)) + 69; // MIDI note number
+  return NOTE_NAMES[((semitones % 12) + 12) % 12];
+}
+
+function freqToNoteIndex(freq) {
+  if (freq <= 0) return -1;
+  const semitones = Math.round(12 * Math.log2(freq / 440)) + 69;
+  return ((semitones % 12) + 12) % 12;
+}
+
+// ── Mic setup ──────────────────────────────────────────────────────────────
+async function startListening() {
+  if (isListening) return;
+
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+  } catch (err) {
+    document.getElementById('hum-status').textContent = 'Mic access denied — check browser permissions';
+    return;
+  }
+
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  analyserNode = audioCtx.createAnalyser();
+  analyserNode.fftSize = 2048;
+  analyserNode.smoothingTimeConstant = 0.2;
+
+  const source = audioCtx.createMediaStreamSource(micStream);
+  source.connect(analyserNode);
+
+  isListening = true;
+  pitchBuffer = [];
+
+  const btn = document.getElementById('hum-btn');
+  btn.classList.add('listening');
+  document.getElementById('hum-btn-label').textContent = 'Listening…';
+  document.getElementById('hum-status').textContent = 'Hum your note — release when done';
+  document.getElementById('waveform-display').style.display = 'flex';
+  document.getElementById('detected-notes-area').style.display = 'none';
+
+  startWaveformAnim();
+  collectPitch();
+}
+
+function stopListening() {
+  if (!isListening) return;
+  isListening = false;
+
+  const btn = document.getElementById('hum-btn');
+  btn.classList.remove('listening');
+  btn.classList.add('analysing');
+  document.getElementById('hum-btn-label').textContent = 'Analysing…';
+  document.getElementById('hum-status').textContent = 'Finding matching chords…';
+
+  stopWaveformAnim();
+
+  // Short delay then analyse
+  setTimeout(() => {
+    analysePitchBuffer();
+    stopMic();
+    btn.classList.remove('analysing');
+    document.getElementById('hum-btn-label').textContent = 'Hold to hum';
+  }, 400);
+}
+
+function stopMic() {
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  analyserNode = null;
+}
+
+// ── Continuous pitch sampling while button held ────────────────────────────
+function collectPitch() {
+  if (!isListening || !analyserNode) return;
+
+  const bufferLength = analyserNode.fftSize;
+  const dataArray = new Float32Array(bufferLength);
+  analyserNode.getFloatTimeDomainData(dataArray);
+
+  // Check RMS amplitude — only register if loud enough (not silence/breath)
+  let rms = 0;
+  for (let i = 0; i < bufferLength; i++) rms += dataArray[i] * dataArray[i];
+  rms = Math.sqrt(rms / bufferLength);
+
+  if (rms > 0.01) { // signal loud enough
+    const freq = yinPitch(dataArray, audioCtx.sampleRate);
+    if (freq > MIN_FREQ && freq < MAX_FREQ) {
+      pitchBuffer.push(freq);
+    }
+  }
+
+  requestAnimationFrame(collectPitch);
+}
+
+// ── Analyse collected pitches ──────────────────────────────────────────────
+function analysePitchBuffer() {
+  document.getElementById('waveform-display').style.display = 'none';
+
+  if (pitchBuffer.length < 3) {
+    document.getElementById('hum-status').textContent = 'Nothing detected — try humming louder';
+    return;
+  }
+
+  // Cluster frequencies into note buckets
+  const noteCounts = {};
+  pitchBuffer.forEach(freq => {
+    const note = freqToNoteName(freq);
+    if (note) noteCounts[note] = (noteCounts[note] || 0) + 1;
+  });
+
+  // Sort by frequency (most detected first), take top 3
+  const sortedNotes = Object.entries(noteCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([note]) => note);
+
+  if (!sortedNotes.length) {
+    document.getElementById('hum-status').textContent = 'Could not identify a clear pitch — try again';
+    return;
+  }
+
+  // Display detected notes
+  const notesEl = document.getElementById('notes-detected');
+  notesEl.innerHTML = sortedNotes.map(n =>
+    `<span class="note-pill">${n}</span>`
+  ).join('');
+
+  // Score chords against detected notes
+  const detectedIndices = sortedNotes.map(n => NOTE_NAMES.indexOf(n));
+  const scoredChords = scoreChords(detectedIndices);
+
+  // Show suggestions
+  showPitchSuggestions(scoredChords);
+  document.getElementById('detected-notes-area').style.display = 'block';
+  document.getElementById('hum-status').textContent =
+    `Detected ${sortedNotes.join(', ')} — ${scoredChords.length} chord matches`;
+}
+
+// ── Score every known chord against detected note indices ──────────────────
+function scoreChords(detectedIndices) {
+  const results = [];
+
+  // Score against current tuning's chord library
+  const shapes = CHORDS[tuning] || CHORDS.standard;
+
+  Object.keys(CHORD_NOTES).forEach(chordName => {
+    const chordIndices = CHORD_NOTES[chordName];
+
+    // How many detected notes appear in this chord?
+    let hits = 0;
+    detectedIndices.forEach(di => {
+      if (chordIndices.includes(di)) hits++;
+    });
+
+    // Bonus: primary detected note (most frequent) matches root
+    const rootBonus = detectedIndices[0] === chordIndices[0] ? 0.15 : 0;
+
+    // Score = (hits / detected) weighted by chord coverage
+    const coverage = hits / detectedIndices.length;
+    const score = Math.min(1, coverage + rootBonus);
+
+    if (hits > 0) results.push({ name: chordName, score, hits, hasDiagram: !!shapes[chordName] });
+  });
+
+  // Sort by score, return top 6
+  return results.sort((a, b) => b.score - a.score).slice(0, 6);
+}
+
+function showPitchSuggestions(chords) {
+  const container = document.getElementById('pitch-suggestions');
+  if (!chords.length) {
+    container.innerHTML = '<p style="font-size:.72rem;color:var(--ink-faint);font-style:italic">No close matches found</p>';
+    return;
+  }
+
+  const maxScore = chords[0].score;
+  container.innerHTML = chords.map((ch, i) => {
+    const pct = Math.round((ch.score / maxScore) * 100);
+    const isTop = i === 0;
+    return `<div class="pitch-suggestion-item${isTop ? ' top-match' : ''}" onclick="applyPitchChord('${ch.name}')">
+      <span class="pitch-match-name">${ch.name}</span>
+      <div class="pitch-match-bar-wrap">
+        <div class="pitch-match-bar" style="width:${pct}%"></div>
+      </div>
+      <span class="pitch-match-pct">${pct}%</span>
+      <button class="pitch-apply-btn" onclick="event.stopPropagation();applyPitchChord('${ch.name}')">Use</button>
+    </div>`;
+  }).join('');
+}
+
+function applyPitchChord(chordName) {
+  if (!selectedMarker) {
+    // Flash the status to tell user to select a marker
+    document.getElementById('hum-status').textContent = '← Select a chord marker first, then pick';
+    document.getElementById('hum-status').style.color = 'var(--amber)';
+    setTimeout(() => {
+      document.getElementById('hum-status').style.color = '';
+      document.getElementById('hum-status').textContent = 'Pick a match above or hum again';
+    }, 2000);
+    return;
+  }
+  nameMarker(selectedMarker, chordName);
+  document.getElementById('hum-status').textContent = chordName + ' applied ✓';
+  // Show diagram
+  showDiagram(chordName);
+}
+
+// ── Waveform animation while listening ────────────────────────────────────
+function startWaveformAnim() {
+  const bars = ['wb1','wb2','wb3','wb4','wb5','wb6','wb7','wb8','wb9'];
+  function animate() {
+    if (!isListening) return;
+    // If we have analyser, use real amplitude data
+    if (analyserNode) {
+      const data = new Uint8Array(analyserNode.frequencyBinCount);
+      analyserNode.getByteFrequencyData(data);
+      bars.forEach((id, i) => {
+        const bin = Math.floor((i / bars.length) * data.length * 0.3);
+        const h = Math.max(3, Math.floor((data[bin] / 255) * 22) + 3);
+        const el = document.getElementById(id);
+        if (el) el.style.height = h + 'px';
+      });
+    }
+    waveformAnimId = requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+function stopWaveformAnim() {
+  if (waveformAnimId) { cancelAnimationFrame(waveformAnimId); waveformAnimId = null; }
+  // Reset bars
+  ['wb1','wb2','wb3','wb4','wb5','wb6','wb7','wb8','wb9'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.height = '4px';
+  });
+}
+
+// ── Prevent context menu on long-press mobile ──────────────────────────────
+document.getElementById && document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('hum-btn');
+  if (btn) btn.addEventListener('contextmenu', e => e.preventDefault());
 });
 
 init();
