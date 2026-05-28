@@ -107,6 +107,13 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
 .summary-count{font-size:.68rem;color:var(--ink-muted)}
 .summary-empty{font-size:.78rem;color:var(--ink-faint);font-style:italic;text-align:center;padding:.4rem 0}
 .drag-ghost{position:fixed;pointer-events:none;z-index:1000;background:var(--amber-light);border:1.5px dashed var(--amber);border-radius:6px;padding:.25rem .6rem;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--amber);white-space:nowrap;opacity:.9;transform:translate(-50%,-50%);display:none}
+.fret-start-btn{font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;padding:.2rem .42rem;border-radius:5px;border:1px solid var(--border-mid);background:white;color:var(--ink-muted);cursor:pointer;transition:all .12s}
+.fret-start-btn:hover{border-color:var(--ink);color:var(--ink)}
+.fret-start-btn.active{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.str-status-btn{font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;padding:.18rem .4rem;border-radius:5px;border:1px solid var(--border-mid);background:white;color:var(--ink-muted);cursor:pointer;transition:all .12s;min-width:28px;text-align:center}
+.str-status-btn:hover{border-color:var(--ink);color:var(--ink)}
+.str-status-btn.muted{background:var(--red);color:white;border-color:var(--red)}
+.str-status-btn.open{background:var(--teal-light);color:var(--teal);border-color:var(--teal)}
 </style>
 </head>
 <body>
@@ -149,14 +156,48 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
       <p class="picker-status" id="picker-status">Click a marker to name it</p>
       <div class="type-row" id="type-row"></div>
       <div class="chord-grid" id="chord-grid"></div>
-      <div style="font-size:.62rem;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase;margin:.4rem 0 .3rem;padding-top:.4rem;border-top:1px solid var(--border)">custom</div>
+      <div style="font-size:.62rem;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase;margin:.4rem 0 .3rem;padding-top:.4rem;border-top:1px solid var(--border)">custom chord</div>
       <div class="custom-row">
-        <input class="custom-input" id="custom-input" placeholder="e.g. F#m7" maxlength="8">
-        <button class="btn btn-primary" onclick="applyCustom()" style="padding:.35rem .7rem;border-radius:6px;font-size:.8rem">✓</button>
+        <input class="custom-input" id="custom-input" placeholder="e.g. F#m7" maxlength="8" oninput="onCustomNameInput()">
+        <button class="btn btn-primary" onclick="applyCustom()" style="padding:.35rem .7rem;border-radius:6px;font-size:.8rem">✓ Apply</button>
       </div>
     </div>
 
-    <!-- FULL DIAGRAM -->
+    <!-- CUSTOM CHORD BUILDER -->
+    <div class="panel" id="custom-builder" style="display:none">
+      <p class="panel-title">Build fingering — <span id="builder-chord-name" style="color:var(--teal);font-family:'Instrument Serif',serif;font-size:1rem;font-weight:400;text-transform:none;letter-spacing:0"></span></p>
+
+      <!-- fret start selector -->
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.6rem;flex-wrap:wrap">
+        <span style="font-size:.68rem;color:var(--ink-muted)">Starts at fret:</span>
+        <div style="display:flex;gap:.25rem" id="fret-start-row"></div>
+      </div>
+
+      <!-- the interactive grid -->
+      <div style="display:flex;gap:.5rem;align-items:flex-start">
+        <!-- string labels E A D G B e top-to-bottom = strings 6→1 displayed left→right -->
+        <div style="display:flex;flex-direction:column;padding-top:18px;gap:0">
+          <div id="mute-row" style="display:flex;gap:0"></div>
+        </div>
+        <div style="flex:1">
+          <svg id="builder-svg" width="100%" height="160" viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" style="cursor:pointer;display:block"></svg>
+        </div>
+      </div>
+
+      <div style="font-size:.68rem;color:var(--ink-muted);margin-top:.4rem">Click frets to place dots · Click a dot to remove · Toggle <strong>✕</strong> to mute a string</div>
+
+      <!-- open/mute string toggles -->
+      <div style="margin-top:.5rem">
+        <div style="font-size:.62rem;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.3rem">String status</div>
+        <div id="string-status-row" style="display:flex;gap:.3rem;flex-wrap:wrap"></div>
+      </div>
+
+      <button class="btn btn-primary" onclick="applyCustomWithDiagram()" style="width:100%;margin-top:.75rem;border-radius:8px;justify-content:center">
+        ✓ Use this chord
+      </button>
+    </div>
+
+    <!-- FULL DIAGRAM (for picked chords from the main grid) -->
     <div class="panel diagram-panel" id="diagram-panel">
       <p class="panel-title">Fingering diagram</p>
       <div class="diagram-header">
@@ -608,7 +649,6 @@ function removeMarker(m){
   hideDiagram();updateSummary();
 }
 function applyChord(ch){if(selectedMarker)nameMarker(selectedMarker,ch);}
-function applyCustom(){const v=document.getElementById('custom-input').value.trim();if(v&&selectedMarker)nameMarker(selectedMarker,v);}
 function nameMarker(m,ch,deselect=true){
   m.dataset.chord=ch;m.querySelector('.marker-label').textContent=ch;
   m.classList.remove('unnamed');m.classList.add('named');
@@ -671,6 +711,215 @@ function exportSheet(){
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));
   a.download=title.replace(/\s+/g,'-').toLowerCase()+'-chords.txt';a.click();
+}
+
+// ═══ CUSTOM CHORD BUILDER ═══
+// State: 6 strings (index 0=string6/low E, 5=string1/high e)
+// stringState: 'open' | 'muted' | number (fret)
+let customDots=[];       // [{s:1-6, f:fret}]
+let customMuted=[];      // [string numbers 1-6]
+let customFretStart=1;
+let customChordName='';
+const STRING_NAMES=['e','B','G','D','A','E']; // high to low (index 0=s1, 5=s6) for display
+
+function onCustomNameInput(){
+  const val=document.getElementById('custom-input').value.trim();
+  customChordName=val;
+  const builder=document.getElementById('custom-builder');
+  if(val.length>0){
+    builder.style.display='block';
+    document.getElementById('builder-chord-name').textContent=val;
+    renderBuilderFretStart();
+    renderBuilderStringStatus();
+    renderBuilderSVG();
+  } else {
+    builder.style.display='none';
+  }
+}
+
+function renderBuilderFretStart(){
+  const row=document.getElementById('fret-start-row');
+  row.innerHTML='';
+  for(let f=1;f<=9;f++){
+    const b=document.createElement('button');
+    b.className='fret-start-btn'+(f===customFretStart?' active':'');
+    b.textContent=f;
+    b.onclick=()=>{customFretStart=f;renderBuilderFretStart();renderBuilderSVG();};
+    row.appendChild(b);
+  }
+}
+
+function renderBuilderStringStatus(){
+  const row=document.getElementById('string-status-row');
+  row.innerHTML='';
+  // strings 6→1 (low E to high e)
+  for(let s=6;s>=1;s--){
+    const isMuted=customMuted.includes(s);
+    const strName=STRING_NAMES[6-s]; // s6→index5→'E', s1→index0→'e'
+    const b=document.createElement('button');
+    b.className='str-status-btn'+(isMuted?' muted':'');
+    b.title=(isMuted?'Muted':'Open')+' — click to toggle';
+    b.textContent=(isMuted?'✕ ':'○ ')+strName;
+    b.onclick=()=>{
+      if(isMuted){customMuted=customMuted.filter(x=>x!==s);}
+      else{customMuted.push(s);customDots=customDots.filter(d=>d.s!==s);}
+      renderBuilderStringStatus();renderBuilderSVG();
+    };
+    row.appendChild(b);
+  }
+}
+
+function renderBuilderSVG(){
+  const svg=document.getElementById('builder-svg');
+  svg.innerHTML='';
+  const ns='http://www.w3.org/2000/svg';
+  const W=200,H=160;
+  const rows=4;
+  const padL=18,padR=22,padT=22,padB=8;
+  const gridW=W-padL-padR,gridH=H-padT-padB;
+  const sx=s=>padL+(6-s)*(gridW/5);
+  const fy=f=>padT+(f-customFretStart)*(gridH/rows)+gridH/(rows*2);
+
+  // nut or fret label
+  if(customFretStart===1){
+    const n=document.createElementNS(ns,'line');
+    n.setAttribute('x1',padL);n.setAttribute('y1',padT);
+    n.setAttribute('x2',W-padR);n.setAttribute('y2',padT);
+    n.setAttribute('stroke','#1A1714');n.setAttribute('stroke-width','3');
+    svg.appendChild(n);
+  } else {
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',W-padR+3);t.setAttribute('y',padT+5);
+    t.setAttribute('font-size','9');t.setAttribute('fill','#D4780A');
+    t.textContent=customFretStart+'fr';svg.appendChild(t);
+  }
+
+  // string lines + top labels
+  for(let s=1;s<=6;s++){
+    const x=sx(s);
+    // vertical string line
+    const l=document.createElementNS(ns,'line');
+    l.setAttribute('x1',x);l.setAttribute('y1',padT);
+    l.setAttribute('x2',x);l.setAttribute('y2',padT+gridH);
+    l.setAttribute('stroke','#ccc');l.setAttribute('stroke-width','1');
+    svg.appendChild(l);
+
+    // muted or open indicator at top
+    const isMuted=customMuted.includes(s);
+    const hasDot=customDots.some(d=>d.s===s);
+    if(isMuted){
+      const t=document.createElementNS(ns,'text');
+      t.setAttribute('x',x);t.setAttribute('y',padT-5);
+      t.setAttribute('font-size','11');t.setAttribute('fill','#C0392B');
+      t.setAttribute('text-anchor','middle');t.textContent='×';
+      svg.appendChild(t);
+    } else if(!hasDot){
+      // open string circle
+      const c=document.createElementNS(ns,'circle');
+      c.setAttribute('cx',x);c.setAttribute('cy',padT-8);
+      c.setAttribute('r','4');c.setAttribute('fill','none');
+      c.setAttribute('stroke','#aaa');c.setAttribute('stroke-width','1.2');
+      svg.appendChild(c);
+    }
+
+    // string name label at bottom
+    const lbl=document.createElementNS(ns,'text');
+    lbl.setAttribute('x',x);lbl.setAttribute('y',padT+gridH+12);
+    lbl.setAttribute('font-size','7');lbl.setAttribute('fill','#aaa');
+    lbl.setAttribute('text-anchor','middle');
+    lbl.textContent=STRING_NAMES[6-s];
+    svg.appendChild(lbl);
+  }
+
+  // fret lines
+  for(let i=0;i<=rows;i++){
+    const y=padT+i*(gridH/rows);
+    const l=document.createElementNS(ns,'line');
+    l.setAttribute('x1',padL);l.setAttribute('y1',y);
+    l.setAttribute('x2',W-padR);l.setAttribute('y2',y);
+    l.setAttribute('stroke','#ccc');l.setAttribute('stroke-width','1');
+    svg.appendChild(l);
+    // fret number
+    if(i<rows){
+      const t=document.createElementNS(ns,'text');
+      t.setAttribute('x',padL-4);t.setAttribute('y',y+(gridH/rows/2)+3);
+      t.setAttribute('font-size','7');t.setAttribute('fill','#bbb');
+      t.setAttribute('text-anchor','end');
+      t.textContent=customFretStart+i;
+      svg.appendChild(t);
+    }
+  }
+
+  // clickable hit areas for each fret×string
+  for(let s=1;s<=6;s++){
+    for(let fi=0;fi<rows;fi++){
+      const f=customFretStart+fi;
+      const x=sx(s);
+      const y=padT+fi*(gridH/rows);
+      const cellH=gridH/rows;
+      const hit=document.createElementNS(ns,'rect');
+      hit.setAttribute('x',x-10);hit.setAttribute('y',y);
+      hit.setAttribute('width',20);hit.setAttribute('height',cellH);
+      hit.setAttribute('fill','transparent');hit.setAttribute('cursor','pointer');
+      hit.addEventListener('click',()=>toggleDot(s,f));
+      svg.appendChild(hit);
+    }
+  }
+
+  // existing dots
+  customDots.forEach(({s,f})=>{
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',sx(s));c.setAttribute('cy',fy(f));
+    c.setAttribute('r','7');c.setAttribute('fill','#0F6E56');
+    c.setAttribute('cursor','pointer');
+    c.addEventListener('click',e=>{e.stopPropagation();removeDot(s,f);});
+    svg.appendChild(c);
+  });
+}
+
+function toggleDot(s,f){
+  if(customMuted.includes(s))return; // can't place dot on muted string
+  const existing=customDots.findIndex(d=>d.s===s&&d.f===f);
+  if(existing>=0){customDots.splice(existing,1);}
+  else{
+    // remove any other dot on this string first (one dot per string)
+    customDots=customDots.filter(d=>d.s!==s);
+    customDots.push({s,f});
+  }
+  renderBuilderSVG();
+}
+function removeDot(s,f){
+  customDots=customDots.filter(d=>!(d.s===s&&d.f===f));
+  renderBuilderSVG();
+}
+
+function applyCustomWithDiagram(){
+  const name=document.getElementById('custom-input').value.trim();
+  if(!name){alert('Give the chord a name first');return;}
+  if(!selectedMarker){alert('Select a marker on the lyrics first');return;}
+
+  // Build a shape and register it temporarily
+  const shape={
+    dots:[...customDots],
+    muted:[...customMuted],
+    open:[],
+    fr:customFretStart,
+    fingering:customDots.map(({s,f})=>'String '+s+' fret '+f).join('  ')||'Open'
+  };
+  // Register in current tuning so diagram shows up
+  if(!CHORDS[tuning])CHORDS[tuning]={};
+  CHORDS[tuning][name]=shape;
+
+  nameMarker(selectedMarker,name);
+  // reset builder
+  customDots=[];customMuted=[];customFretStart=1;
+  document.getElementById('custom-input').value='';
+  document.getElementById('custom-builder').style.display='none';
+}
+
+function applyCustom(){
+  const v=document.getElementById('custom-input').value.trim();
+  if(v&&selectedMarker)nameMarker(selectedMarker,v);
 }
 
 document.addEventListener('keydown',e=>{
