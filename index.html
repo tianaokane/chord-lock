@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chord Lock — Stage 3</title>
+<title>Chord Lock — Stage 4</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -146,6 +146,12 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
 .waveform-bar{width:3px;background:var(--amber);border-radius:2px;transition:height .1s ease}
 
 .hum-status{font-size:.72rem;color:var(--ink-muted);text-align:center;margin-bottom:.5rem;min-height:1em}
+.key-context-status{font-size:.7rem;color:var(--teal);text-align:center;margin-bottom:.55rem;min-height:1em;font-weight:500}
+.key-context-status.ambiguous{color:var(--ink-faint);font-weight:400}
+.pitch-context-badge{font-size:.6rem;font-weight:500;letter-spacing:.02em;padding:.12rem .38rem;border-radius:100px;border:1px solid var(--border-mid);white-space:nowrap;color:var(--ink-muted);background:var(--cream)}
+.pitch-context-badge.in-key{color:var(--teal);background:var(--teal-light);border-color:rgba(15,110,86,.25)}
+.pitch-context-badge.follows{color:var(--amber);background:var(--amber-light);border-color:rgba(212,120,10,.25)}
+.pitch-context-badge.pitch{color:var(--ink-muted);background:white}
 </style>
 </head>
 <body>
@@ -159,7 +165,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
     <button class="tuning-btn" onclick="setTuning('dadgad',this)">DADGAD</button>
   </div>
   <div class="header-actions">
-    <span class="stage-badge">Stage 3</span>
+    <span class="stage-badge">Stage 4</span>
     <button class="btn" onclick="clearAll()">Clear</button>
     <button class="btn btn-primary" onclick="exportSheet()">Export ↗</button>
   </div>
@@ -183,6 +189,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
         <span id="hum-btn-label">Hold to hum</span>
       </button>
       <p class="hum-status" id="hum-status">Hold the button and hum a note</p>
+      <p class="key-context-status ambiguous" id="key-context-status">No locked chord context yet</p>
       <div class="waveform-display" id="waveform-display" style="display:none">
         <div class="waveform-bar" id="wb1" style="height:4px"></div>
         <div class="waveform-bar" id="wb2" style="height:8px"></div>
@@ -750,7 +757,7 @@ function clearAll(){
   document.getElementById('song-title').value='';
   document.getElementById('sections-container').innerHTML='';
   sectionCounter=0;markerCounter=0;selectedMarker=null;
-  hideDiagram();addSection('Verse 1');updateSummary();
+  hideDiagram();addSection('Verse 1');updateSummary();updateKeyContextStatus(null,0);
 }
 function exportSheet(){
   const title=document.getElementById('song-title').value||'Untitled';
@@ -1215,7 +1222,7 @@ function analysePitchBuffer() {
 
   // Score chords against detected notes
   const detectedIndices = sortedNotes.map(n => NOTE_NAMES.indexOf(n));
-  const scoredChords = scoreChords(detectedIndices);
+  const scoredChords = scoreChords(detectedIndices, selectedMarker);
 
   // Show suggestions
   showPitchSuggestions(scoredChords);
@@ -1224,34 +1231,144 @@ function analysePitchBuffer() {
     `Detected ${sortedNotes.join(', ')} — ${scoredChords.length} chord matches`;
 }
 
-// ── Score every known chord against detected note indices ──────────────────
-function scoreChords(detectedIndices) {
-  const results = [];
+// ── Stage 4 context-aware suggestion scoring ───────────────────────────────
+const TRANSITIONS = {
+  G:  { D:1.0, Em:1.0, C:0.9, Am:0.8, Bm:0.7, G7:0.6 },
+  C:  { G:1.0, F:0.9, Am:0.9, Dm:0.8, Em:0.7 },
+  D:  { G:1.0, A:0.9, Em:0.8, Bm:0.8, D7:0.7 },
+  Em: { Am:1.0, C:0.9, D:0.9, G:0.8, B:0.7 },
+  Am: { Em:1.0, Dm:0.9, G:0.8, C:0.8, E:0.7 },
+  F:  { C:1.0, Bb:0.9, Am:0.8, Dm:0.8 },
+  A:  { D:1.0, E:0.9, Bm:0.8, A7:0.7 },
+  E:  { Am:1.0, A:0.9, B:0.8, E7:0.7 },
+  Dm: { Am:1.0, Gm:0.9, Bb:0.8, C:0.8 },
+  Bm: { Em:1.0, G:0.9, D:0.8, A:0.8 },
+};
 
-  // Score against current tuning's chord library
+function getLockedChordNames() {
+  return Array.from(document.querySelectorAll('.chord-marker.named[data-chord]'))
+    .map(m => m.dataset.chord)
+    .filter(Boolean);
+}
+
+function detectKey(chordNames) {
+  if (!chordNames || chordNames.length === 0) return null;
+
+  const scores = {};
+  Object.entries(KEY_DATA).forEach(([keyMode, keys]) => {
+    Object.entries(keys).forEach(([keyName, keyChords]) => {
+      const id = keyName + '_' + keyMode;
+      scores[id] = chordNames.filter(ch => keyChords.includes(ch)).length;
+    });
+  });
+
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const best = sorted[0];
+  const second = sorted[1];
+
+  if (!best || best[1] === 0) return null;
+
+  // If two keys fit equally well, do not pretend we know the key.
+  if (second && second[1] === best[1]) return null;
+
+  const [keyName, keyMode] = best[0].split('_');
+  return {
+    key: keyName,
+    mode: keyMode,
+    chords: KEY_DATA[keyMode][keyName],
+    lockedCount: chordNames.length,
+    matchedCount: best[1]
+  };
+}
+
+function getPreviousChord(markerEl) {
+  if (!markerEl) return null;
+
+  const allMarkers = Array.from(
+    document.querySelectorAll('.chord-marker.named[data-chord]')
+  ).filter(m => m.dataset.chord);
+
+  const idx = allMarkers.indexOf(markerEl);
+  if (idx <= 0) return null;
+  return allMarkers[idx - 1].dataset.chord;
+}
+
+function getTransitionScore(fromChord, toChord) {
+  if (!fromChord || !TRANSITIONS[fromChord]) return 0.5;
+  return TRANSITIONS[fromChord][toChord] || 0.2;
+}
+
+function updateKeyContextStatus(keyContext, lockedCount) {
+  const el = document.getElementById('key-context-status');
+  if (!el) return;
+
+  if (keyContext) {
+    el.classList.remove('ambiguous');
+    el.textContent = `Detected key: ${keyContext.key} ${keyContext.mode}  (from ${lockedCount} locked chord${lockedCount === 1 ? '' : 's'})`;
+  } else if (lockedCount > 0) {
+    el.classList.add('ambiguous');
+    el.textContent = `${lockedCount} locked chord${lockedCount === 1 ? '' : 's'} — key still ambiguous`;
+  } else {
+    el.classList.add('ambiguous');
+    el.textContent = 'No locked chord context yet';
+  }
+}
+
+// ── Score every known chord using pitch + locked key context + progression ─
+function scoreChords(detectedIndices, selectedMarkerEl = null) {
+  const results = [];
   const shapes = CHORDS[tuning] || CHORDS.standard;
+
+  const lockedChords = getLockedChordNames();
+  const keyContext = detectKey(lockedChords);
+  const prevChord = getPreviousChord(selectedMarkerEl);
+
+  updateKeyContextStatus(keyContext, lockedChords.length);
 
   Object.keys(CHORD_NOTES).forEach(chordName => {
     const chordIndices = CHORD_NOTES[chordName];
 
-    // How many detected notes appear in this chord?
+    // LAYER 1: pitch match
     let hits = 0;
     detectedIndices.forEach(di => {
       if (chordIndices.includes(di)) hits++;
     });
 
-    // Bonus: primary detected note (most frequent) matches root
+    if (hits === 0) return;
+
     const rootBonus = detectedIndices[0] === chordIndices[0] ? 0.15 : 0;
+    const pitchScore = Math.min(1, (hits / detectedIndices.length) + rootBonus);
 
-    // Score = (hits / detected) weighted by chord coverage
-    const coverage = hits / detectedIndices.length;
-    const score = Math.min(1, coverage + rootBonus);
+    // LAYER 2: key context from already locked/named markers
+    let keyScore = 0.5;
+    if (keyContext) {
+      keyScore = keyContext.chords.includes(chordName) ? 1.0 : 0.2;
+    }
 
-    if (hits > 0) results.push({ name: chordName, score, hits, hasDiagram: !!shapes[chordName] });
+    // LAYER 3: naturalness from previous locked chord
+    const transScore = getTransitionScore(prevChord, chordName);
+
+    const finalScore = (pitchScore * 0.5) + (keyScore * 0.3) + (transScore * 0.2);
+
+    results.push({
+      name: chordName,
+      score: finalScore,
+      pitchScore,
+      keyScore,
+      transScore,
+      hits,
+      inKey: keyContext ? keyContext.chords.includes(chordName) : null,
+      hasDiagram: !!shapes[chordName]
+    });
   });
 
-  // Sort by score, return top 6
   return results.sort((a, b) => b.score - a.score).slice(0, 6);
+}
+
+function suggestionBadge(ch) {
+  if (ch.inKey) return { text: '🟢 in key', className: 'in-key' };
+  if (ch.transScore > 0.7) return { text: '🎵 follows well', className: 'follows' };
+  return { text: '🎤 pitch', className: 'pitch' };
 }
 
 function showPitchSuggestions(chords) {
@@ -1261,12 +1378,15 @@ function showPitchSuggestions(chords) {
     return;
   }
 
-  const maxScore = chords[0].score;
+  const maxScore = Math.max(chords[0].score, 0.01);
   container.innerHTML = chords.map((ch, i) => {
     const pct = Math.round((ch.score / maxScore) * 100);
     const isTop = i === 0;
-    return `<div class="pitch-suggestion-item${isTop ? ' top-match' : ''}" onclick="applyPitchChord('${ch.name}')">
+    const badge = suggestionBadge(ch);
+    const title = `Why this chord?\nPitch match: ${Math.round(ch.pitchScore * 100)}%\nKey fit: ${Math.round(ch.keyScore * 100)}%\nTransition: ${Math.round(ch.transScore * 100)}%`;
+    return `<div class="pitch-suggestion-item${isTop ? ' top-match' : ''}" title="${title}" onclick="applyPitchChord('${ch.name}')">
       <span class="pitch-match-name">${ch.name}</span>
+      <span class="pitch-context-badge ${badge.className}">${badge.text}</span>
       <div class="pitch-match-bar-wrap">
         <div class="pitch-match-bar" style="width:${pct}%"></div>
       </div>
