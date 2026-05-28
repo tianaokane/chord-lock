@@ -3,468 +3,86 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chord Lock — Stage 1</title>
+<title>Chord Lock</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --cream: #FAF8F3;
-    --ink: #1A1714;
-    --ink-muted: #6B6560;
-    --ink-faint: #C4BFB9;
-    --amber: #D4780A;
-    --amber-light: #FDF3E3;
-    --teal: #0F6E56;
-    --teal-light: #E1F5EE;
-    --red: #C0392B;
-    --border: rgba(26,23,20,0.1);
-    --border-mid: rgba(26,23,20,0.18);
-  }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--cream);
-    color: var(--ink);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* HEADER */
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 2rem;
-    border-bottom: 1px solid var(--border);
-    background: rgba(250,248,243,0.95);
-    backdrop-filter: blur(8px);
-    position: sticky;
-    top: 0;
-    z-index: 50;
-  }
-
-  .logo {
-    font-family: 'Instrument Serif', serif;
-    font-size: 1.2rem;
-    color: var(--ink);
-    letter-spacing: -0.02em;
-  }
-  .logo span { color: var(--amber); }
-
-  .header-actions { display: flex; gap: 0.75rem; align-items: center; }
-
-  .stage-badge {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: var(--amber-light);
-    color: var(--amber);
-    border: 1px solid rgba(212,120,10,0.2);
-    padding: 0.25rem 0.75rem;
-    border-radius: 100px;
-  }
-
-  .btn {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
-    font-weight: 500;
-    padding: 0.45rem 1rem;
-    border-radius: 100px;
-    border: 1px solid var(--border-mid);
-    background: transparent;
-    color: var(--ink);
-    cursor: pointer;
-    transition: background 0.15s, border-color 0.15s, transform 0.1s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-  .btn:hover { background: rgba(26,23,20,0.05); border-color: var(--ink); }
-  .btn:active { transform: scale(0.97); }
-  .btn-primary { background: var(--ink); color: var(--cream); border-color: var(--ink); }
-  .btn-primary:hover { background: var(--amber); border-color: var(--amber); }
-  .btn-danger { color: var(--red); border-color: rgba(192,57,43,0.2); }
-  .btn-danger:hover { background: rgba(192,57,43,0.06); border-color: var(--red); }
-
-  /* LAYOUT */
-  .workspace {
-    display: grid;
-    grid-template-columns: 1fr 280px;
-    flex: 1;
-    min-height: 0;
-  }
-
-  /* MAIN EDITOR */
-  .editor-pane {
-    padding: 2.5rem 3rem;
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    overflow-y: auto;
-  }
-
-  .editor-hint {
-    font-size: 0.8rem;
-    color: var(--ink-muted);
-    background: var(--amber-light);
-    border: 1px solid rgba(212,120,10,0.15);
-    border-radius: 8px;
-    padding: 0.6rem 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-  .editor-hint.hidden { display: none; }
-
-  /* TITLE INPUT */
-  .song-title-input {
-    font-family: 'Instrument Serif', serif;
-    font-size: 1.8rem;
-    font-weight: 400;
-    color: var(--ink);
-    background: transparent;
-    border: none;
-    outline: none;
-    width: 100%;
-    letter-spacing: -0.02em;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 0.75rem;
-  }
-  .song-title-input::placeholder { color: var(--ink-faint); }
-
-  /* LYRIC SECTION (verse/chorus etc) */
-  .section-block {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    position: relative;
-  }
-
-  .section-label-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .section-label-input {
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--amber);
-    background: transparent;
-    border: none;
-    outline: none;
-    width: 100px;
-  }
-  .section-label-input::placeholder { color: var(--ink-faint); }
-
-  .remove-section-btn {
-    font-size: 0.7rem;
-    color: var(--ink-faint);
-    background: none;
-    border: none;
-    cursor: pointer;
-    padding: 0.1rem 0.3rem;
-    border-radius: 4px;
-    transition: color 0.15s;
-    margin-left: auto;
-  }
-  .remove-section-btn:hover { color: var(--red); }
-
-  /* LYRIC LINES */
-  .lyric-line-wrapper {
-    position: relative;
-    margin-bottom: 0.25rem;
-  }
-
-  /* chord row sits above the text line */
-  .chord-row {
-    position: relative;
-    height: 24px;
-    width: 100%;
-    cursor: crosshair;
-    user-select: none;
-  }
-  .chord-row:hover { background: rgba(212,120,10,0.04); border-radius: 4px; }
-
-  /* click zone hint line */
-  .chord-row::after {
-    content: 'click to place chord';
-    position: absolute;
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 0.65rem;
-    color: var(--ink-faint);
-    opacity: 0;
-    transition: opacity 0.2s;
-    pointer-events: none;
-    letter-spacing: 0.04em;
-  }
-  .chord-row:hover::after { opacity: 1; }
-
-  /* placed chord marker */
-  .chord-marker {
-    position: absolute;
-    top: 2px;
-    transform: translateX(-50%);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.2rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
-    font-weight: 500;
-    padding: 0.12rem 0.4rem;
-    border-radius: 4px;
-    background: var(--ink);
-    color: var(--cream);
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background 0.15s;
-    z-index: 2;
-    letter-spacing: 0.02em;
-  }
-  .chord-marker:hover { background: var(--red); }
-  .chord-marker:hover .marker-label::after { content: ' ✕'; }
-  .chord-marker.named { background: var(--teal); }
-  .chord-marker.named:hover { background: var(--red); }
-  .chord-marker.unnamed { background: var(--amber); }
-  .chord-marker.unnamed:hover { background: var(--red); }
-
-  /* the text line itself */
-  .lyric-text-input {
-    font-family: 'Instrument Serif', serif;
-    font-size: 1.1rem;
-    line-height: 1.5;
-    color: var(--ink);
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid transparent;
-    outline: none;
-    width: 100%;
-    padding: 0.1rem 0;
-    transition: border-color 0.15s;
-  }
-  .lyric-text-input:focus { border-bottom-color: var(--border-mid); }
-  .lyric-text-input::placeholder { color: var(--ink-faint); font-style: italic; }
-
-  .add-line-btn {
-    font-size: 0.75rem;
-    color: var(--ink-faint);
-    background: none;
-    border: 1px dashed var(--ink-faint);
-    border-radius: 6px;
-    padding: 0.3rem 0.75rem;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-    margin-top: 0.25rem;
-    align-self: flex-start;
-  }
-  .add-line-btn:hover { color: var(--ink); border-color: var(--ink-muted); }
-
-  .add-section-btn {
-    align-self: flex-start;
-    margin-top: 0.5rem;
-  }
-
-  /* SIDEBAR */
-  .sidebar {
-    padding: 1.75rem 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    overflow-y: auto;
-    background: white;
-  }
-
-  .sidebar-section-title {
-    font-size: 0.7rem;
-    font-weight: 500;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    margin-bottom: 0.75rem;
-  }
-
-  /* CHORD PICKER */
-  .chord-picker-panel {
-    background: var(--cream);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1rem;
-  }
-
-  .selected-marker-info {
-    font-size: 0.8rem;
-    color: var(--ink-muted);
-    margin-bottom: 0.75rem;
-    min-height: 1.2em;
-  }
-  .selected-marker-info strong { color: var(--ink); }
-
-  .chord-picker-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.35rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .chord-btn {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 0.4rem 0.2rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-mid);
-    background: white;
-    color: var(--ink);
-    cursor: pointer;
-    transition: background 0.12s, border-color 0.12s, transform 0.1s;
-    text-align: center;
-  }
-  .chord-btn:hover { background: var(--amber-light); border-color: var(--amber); color: var(--amber); }
-  .chord-btn:active { transform: scale(0.95); }
-  .chord-btn.selected { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
-
-  .chord-picker-divider {
-    font-size: 0.65rem;
-    color: var(--ink-faint);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin: 0.5rem 0 0.4rem;
-  }
-
-  .custom-chord-row {
-    display: flex;
-    gap: 0.4rem;
-    align-items: center;
-  }
-
-  .custom-chord-input {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.82rem;
-    flex: 1;
-    padding: 0.4rem 0.6rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-mid);
-    background: white;
-    color: var(--ink);
-    outline: none;
-    transition: border-color 0.15s;
-  }
-  .custom-chord-input:focus { border-color: var(--amber); }
-
-  /* CHORD LIST summary */
-  .chord-summary {
-    background: var(--cream);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1rem;
-  }
-
-  .chord-summary-list {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: 200px;
-    overflow-y: auto;
-  }
-
-  .chord-summary-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    font-size: 0.8rem;
-  }
-
-  .summary-chord-pill {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 500;
-    background: var(--teal-light);
-    color: var(--teal);
-    border: 1px solid rgba(15,110,86,0.2);
-    padding: 0.15rem 0.5rem;
-    border-radius: 4px;
-  }
-
-  .summary-location {
-    font-size: 0.72rem;
-    color: var(--ink-muted);
-  }
-
-  .summary-empty {
-    font-size: 0.8rem;
-    color: var(--ink-faint);
-    font-style: italic;
-    text-align: center;
-    padding: 0.5rem 0;
-  }
-
-  /* INLINE CHORD POPUP */
-  .chord-popup {
-    position: fixed;
-    background: white;
-    border: 1px solid var(--border-mid);
-    border-radius: 10px;
-    padding: 0.75rem;
-    box-shadow: 0 8px 24px rgba(26,23,20,0.12);
-    z-index: 200;
-    width: 200px;
-    display: none;
-  }
-  .chord-popup.visible { display: block; }
-  .chord-popup-title {
-    font-size: 0.65rem;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-muted);
-    margin-bottom: 0.5rem;
-  }
-  .chord-popup-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.3rem;
-  }
-  .popup-chord-btn {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 500;
-    padding: 0.35rem 0.15rem;
-    border-radius: 5px;
-    border: 1px solid var(--border);
-    background: var(--cream);
-    color: var(--ink);
-    cursor: pointer;
-    text-align: center;
-    transition: background 0.1s;
-  }
-  .popup-chord-btn:hover { background: var(--teal-light); color: var(--teal); border-color: var(--teal); }
-  .popup-close {
-    margin-top: 0.5rem;
-    width: 100%;
-    font-size: 0.72rem;
-    color: var(--ink-muted);
-    background: none;
-    border: none;
-    cursor: pointer;
-    text-align: right;
-    padding: 0.2rem 0;
-  }
-  .popup-close:hover { color: var(--red); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--cream:#FAF8F3;--ink:#1A1714;--ink-muted:#6B6560;--ink-faint:#C4BFB9;--amber:#D4780A;--amber-light:#FDF3E3;--teal:#0F6E56;--teal-light:#E1F5EE;--red:#C0392B;--border:rgba(26,23,20,0.1);--border-mid:rgba(26,23,20,0.18)}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;border-bottom:1px solid var(--border);background:rgba(250,248,243,0.95);backdrop-filter:blur(8px);position:sticky;top:0;z-index:50}
+.logo{font-family:'Instrument Serif',serif;font-size:1.2rem;color:var(--ink);letter-spacing:-0.02em}
+.logo span{color:var(--amber)}
+.header-actions{display:flex;gap:.75rem;align-items:center}
+.stage-badge{font-size:.7rem;font-weight:500;letter-spacing:.08em;text-transform:uppercase;background:var(--amber-light);color:var(--amber);border:1px solid rgba(212,120,10,.2);padding:.25rem .75rem;border-radius:100px}
+.btn{font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:500;padding:.45rem 1rem;border-radius:100px;border:1px solid var(--border-mid);background:transparent;color:var(--ink);cursor:pointer;transition:background .15s,border-color .15s,transform .1s;display:inline-flex;align-items:center;gap:.4rem}
+.btn:hover{background:rgba(26,23,20,.05);border-color:var(--ink)}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--ink);color:var(--cream);border-color:var(--ink)}
+.btn-primary:hover{background:var(--amber);border-color:var(--amber)}
+.workspace{display:grid;grid-template-columns:1fr 300px;flex:1;min-height:0}
+.editor-pane{padding:2.5rem 3rem;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:1.5rem;overflow-y:auto}
+.editor-hint{font-size:.8rem;color:var(--ink-muted);background:var(--amber-light);border:1px solid rgba(212,120,10,.15);border-radius:8px;padding:.6rem 1rem}
+.editor-hint.hidden{display:none}
+.song-title-input{font-family:'Instrument Serif',serif;font-size:1.8rem;font-weight:400;color:var(--ink);background:transparent;border:none;outline:none;width:100%;letter-spacing:-.02em;border-bottom:1px solid var(--border);padding-bottom:.75rem}
+.song-title-input::placeholder{color:var(--ink-faint)}
+.section-block{display:flex;flex-direction:column;gap:0;position:relative}
+.section-label-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem}
+.section-label-input{font-family:'DM Sans',sans-serif;font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--amber);background:transparent;border:none;outline:none;width:100px}
+.section-label-input::placeholder{color:var(--ink-faint)}
+.remove-section-btn{font-size:.7rem;color:var(--ink-faint);background:none;border:none;cursor:pointer;padding:.1rem .3rem;border-radius:4px;transition:color .15s;margin-left:auto}
+.remove-section-btn:hover{color:var(--red)}
+.lyric-line-wrapper{position:relative;margin-bottom:.25rem;padding-left:28px}
+.copy-handle{position:absolute;left:0;top:4px;width:22px;height:22px;background:white;border:1px solid var(--border-mid);border-radius:4px;cursor:grab;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--ink-muted);opacity:0;transition:opacity .15s;z-index:5;user-select:none;line-height:1}
+.lyric-line-wrapper:hover .copy-handle{opacity:1}
+.copy-handle:hover{background:var(--amber-light);border-color:var(--amber);color:var(--amber)}
+.copy-handle.dragging{opacity:1;cursor:grabbing;background:var(--amber-light);border-color:var(--amber)}
+.chord-row{position:relative;height:26px;width:100%;cursor:crosshair;user-select:none;border-radius:4px;transition:background .15s}
+.chord-row:hover{background:rgba(212,120,10,.05)}
+.chord-row.drop-target{background:rgba(15,110,86,.1)!important;outline:2px dashed var(--teal);outline-offset:-2px}
+.chord-row::after{content:'click to place chord';position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:.62rem;color:var(--ink-faint);opacity:0;transition:opacity .2s;pointer-events:none;letter-spacing:.03em}
+.chord-row:hover::after{opacity:1}
+.chord-row.drop-target::after{content:'drop here to copy chords';color:var(--teal);opacity:1}
+.chord-marker{position:absolute;top:3px;transform:translateX(-50%);display:inline-flex;align-items:center;gap:.2rem;font-family:'DM Mono',monospace;font-size:.7rem;font-weight:500;padding:.12rem .4rem;border-radius:4px;background:var(--ink);color:var(--cream);white-space:nowrap;cursor:pointer;transition:background .15s;z-index:2;letter-spacing:.02em}
+.chord-marker:hover{background:var(--red)}
+.chord-marker.named{background:var(--teal)}
+.chord-marker.named:hover{background:var(--red)}
+.chord-marker.unnamed{background:var(--amber)}
+.chord-marker.unnamed:hover{background:var(--red)}
+.lyric-text-input{font-family:'Instrument Serif',serif;font-size:1.1rem;line-height:1.5;color:var(--ink);background:transparent;border:none;border-bottom:1px solid transparent;outline:none;width:100%;padding:.1rem 0;transition:border-color .15s}
+.lyric-text-input:focus{border-bottom-color:var(--border-mid)}
+.lyric-text-input::placeholder{color:var(--ink-faint);font-style:italic}
+.add-line-btn{font-size:.75rem;color:var(--ink-faint);background:none;border:1px dashed var(--ink-faint);border-radius:6px;padding:.3rem .75rem;cursor:pointer;transition:color .15s,border-color .15s;margin-top:.25rem;align-self:flex-start}
+.add-line-btn:hover{color:var(--ink);border-color:var(--ink-muted)}
+.add-section-btn{align-self:flex-start;margin-top:.5rem}
+.sidebar{padding:1.5rem;display:flex;flex-direction:column;gap:1.25rem;overflow-y:auto;background:white}
+.sidebar-section-title{font-size:.7rem;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-muted);margin-bottom:.6rem}
+.chord-picker-panel{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:1rem}
+.selected-marker-info{font-size:.8rem;color:var(--ink-muted);margin-bottom:.5rem;min-height:1.2em}
+.selected-marker-info strong{color:var(--ink)}
+.mini-diagram-box{display:none;margin-bottom:.75rem;align-items:center;gap:.75rem;background:white;border:1px solid var(--border);border-radius:8px;padding:.6rem .75rem}
+.mini-diagram-box.visible{display:flex}
+.mini-diagram-name{font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--teal);min-width:32px}
+.mini-diagram-sub{font-size:.62rem;color:var(--ink-muted);margin-top:.1rem}
+.chord-picker-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.35rem;margin-bottom:.75rem}
+.chord-btn{font-family:'DM Mono',monospace;font-size:.75rem;font-weight:500;padding:.4rem .2rem;border-radius:6px;border:1px solid var(--border-mid);background:white;color:var(--ink);cursor:pointer;transition:background .12s,border-color .12s,transform .1s;text-align:center}
+.chord-btn:hover{background:var(--amber-light);border-color:var(--amber);color:var(--amber)}
+.chord-btn:active{transform:scale(.95)}
+.chord-btn.selected{background:var(--teal-light);border-color:var(--teal);color:var(--teal)}
+.chord-picker-divider{font-size:.65rem;color:var(--ink-faint);letter-spacing:.08em;text-transform:uppercase;margin:.5rem 0 .4rem}
+.custom-chord-row{display:flex;gap:.4rem;align-items:center}
+.custom-chord-input{font-family:'DM Mono',monospace;font-size:.82rem;flex:1;padding:.4rem .6rem;border-radius:6px;border:1px solid var(--border-mid);background:white;color:var(--ink);outline:none;transition:border-color .15s}
+.custom-chord-input:focus{border-color:var(--amber)}
+.chord-summary{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:1rem}
+.chord-summary-list{list-style:none;display:flex;flex-direction:column;gap:.75rem;max-height:300px;overflow-y:auto}
+.chord-summary-item{display:flex;align-items:center;gap:.6rem}
+.summary-chord-pill{font-family:'DM Mono',monospace;font-size:.72rem;font-weight:500;background:var(--teal-light);color:var(--teal);border:1px solid rgba(15,110,86,.2);padding:.15rem .5rem;border-radius:4px;min-width:36px;text-align:center}
+.summary-right{display:flex;flex-direction:column;gap:.1rem;flex:1}
+.summary-count{font-size:.7rem;color:var(--ink-muted)}
+.summary-empty{font-size:.8rem;color:var(--ink-faint);font-style:italic;text-align:center;padding:.5rem 0}
+.drag-ghost{position:fixed;pointer-events:none;z-index:1000;background:var(--amber-light);border:1.5px dashed var(--amber);border-radius:6px;padding:.25rem .6rem;font-family:'DM Mono',monospace;font-size:.72rem;color:var(--amber);white-space:nowrap;opacity:.9;transform:translate(-50%,-50%);display:none}
 </style>
 </head>
 <body>
-
 <header>
   <div class="logo">Chord <span>Lock</span></div>
   <div class="header-actions">
@@ -473,366 +91,368 @@
     <button class="btn btn-primary" onclick="exportChordSheet()">Export ↗</button>
   </div>
 </header>
-
 <div class="workspace">
-  <!-- EDITOR -->
   <div class="editor-pane" id="editor-pane">
-    <input class="song-title-input" id="song-title" placeholder="Song title..." />
-
-    <div id="hint" class="editor-hint">
-      💡 Click anywhere in the <strong>grey band above a lyric line</strong> to place a chord marker, then pick the chord name in the sidebar.
-    </div>
-
+    <input class="song-title-input" id="song-title" placeholder="Song title...">
+    <div id="hint" class="editor-hint">💡 <strong>Click</strong> the band above any lyric line to drop a chord marker. <strong>Grab ⠿</strong> on the left edge of a line and drag it onto another line to copy all its chords.</div>
     <div id="sections-container"></div>
-
     <button class="btn add-section-btn" onclick="addSection()">+ Add section</button>
   </div>
-
-  <!-- SIDEBAR -->
   <div class="sidebar">
-    <!-- CHORD PICKER -->
     <div class="chord-picker-panel">
       <p class="sidebar-section-title">Chord picker</p>
       <p class="selected-marker-info" id="picker-status">Click a marker to name it</p>
-
+      <div class="mini-diagram-box" id="mini-box">
+        <div>
+          <div class="mini-diagram-name" id="mini-name"></div>
+          <div class="mini-diagram-sub">standard tuning</div>
+        </div>
+        <svg id="mini-svg" width="68" height="62" viewBox="0 0 68 62" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
       <div class="chord-picker-grid" id="chord-picker-grid"></div>
-
       <p class="chord-picker-divider">or type custom</p>
       <div class="custom-chord-row">
-        <input class="custom-chord-input" id="custom-chord-input" placeholder="e.g. F#m7" maxlength="8" />
-        <button class="btn btn-primary" onclick="applyCustomChord()" style="padding:0.4rem 0.75rem; border-radius:6px;">✓</button>
+        <input class="custom-chord-input" id="custom-chord-input" placeholder="e.g. F#m7" maxlength="8">
+        <button class="btn btn-primary" onclick="applyCustomChord()" style="padding:.4rem .75rem;border-radius:6px">✓</button>
       </div>
     </div>
-
-    <!-- CHORD SUMMARY -->
     <div class="chord-summary">
       <p class="sidebar-section-title">Chords in this song</p>
-      <ul class="chord-summary-list" id="chord-summary-list">
-        <li class="summary-empty">No chords placed yet</li>
-      </ul>
+      <ul class="chord-summary-list" id="chord-summary-list"><li class="summary-empty">No chords placed yet</li></ul>
     </div>
   </div>
 </div>
-
-<!-- FLOATING CHORD POPUP (appears near the marker) -->
-<div class="chord-popup" id="chord-popup">
-  <p class="chord-popup-title">Pick chord</p>
-  <div class="chord-popup-grid" id="popup-grid"></div>
-  <button class="popup-close" onclick="closePopup()">dismiss ✕</button>
-</div>
-
+<div class="drag-ghost" id="drag-ghost"></div>
 <script>
-// ─── STATE ───────────────────────────────────────────────
-let selectedMarker = null;
-let markerCounter = 0;
-let sectionCounter = 0;
+let selectedMarker=null,markerCounter=0,sectionCounter=0,dragSourceRow=null;
+const CHORDS=['G','Am','Bm','C','D','Em','F','A','Bb','Dm','E','Fm','Gm','A7','D7','G7','E7','Am7','Dm7','Cmaj7','Gmaj7','F#m','C#m','B','F#','Eb','Ab'];
+const SHAPES={
+  G:{dots:[{s:6,f:3},{s:5,f:2},{s:1,f:3}],muted:[],open:[4,3,2]},
+  Em:{dots:[{s:5,f:2},{s:4,f:2}],muted:[],open:[6,3,2,1]},
+  C:{dots:[{s:5,f:3},{s:4,f:2},{s:2,f:1}],muted:[6],open:[3,1]},
+  D:{dots:[{s:3,f:2},{s:2,f:3},{s:1,f:2}],muted:[6,5],open:[4]},
+  Am:{dots:[{s:4,f:2},{s:3,f:2},{s:2,f:1}],muted:[6],open:[5,1]},
+  Bm:{dots:[{s:5,f:2},{s:4,f:4},{s:3,f:4},{s:2,f:3},{s:1,f:2}],muted:[6],open:[],fr:2},
+  A:{dots:[{s:4,f:2},{s:3,f:2},{s:2,f:2}],muted:[6],open:[5,1]},
+  E:{dots:[{s:5,f:2},{s:4,f:2},{s:3,f:1}],muted:[],open:[6,2,1]},
+  F:{dots:[{s:4,f:2},{s:3,f:3},{s:2,f:3}],muted:[],open:[],barre:{fret:1,from:6,to:1}},
+  Dm:{dots:[{s:3,f:2},{s:2,f:3},{s:1,f:1}],muted:[6,5],open:[4]},
+  Bb:{dots:[{s:4,f:3},{s:3,f:3},{s:2,f:3}],muted:[6],open:[],barre:{fret:1,from:5,to:1}},
+  B:{dots:[{s:5,f:2},{s:4,f:4},{s:3,f:4},{s:2,f:4},{s:1,f:2}],muted:[6],open:[],fr:2},
+  G7:{dots:[{s:6,f:3},{s:5,f:2},{s:1,f:1}],muted:[],open:[4,3,2]},
+  D7:{dots:[{s:3,f:2},{s:1,f:2},{s:2,f:1}],muted:[6,5],open:[4]},
+  A7:{dots:[{s:4,f:2},{s:2,f:2}],muted:[6],open:[5,3,1]},
+  E7:{dots:[{s:5,f:2},{s:3,f:1}],muted:[],open:[6,4,2,1]},
+  Gm:{dots:[{s:6,f:3},{s:5,f:5},{s:4,f:5}],muted:[],open:[],barre:{fret:3,from:6,to:1}},
+  Fm:{dots:[{s:4,f:3},{s:3,f:3},{s:2,f:2}],muted:[],open:[],barre:{fret:1,from:6,to:1}},
+};
 
-const COMMON_CHORDS = [
-  'G','Am','Bm','C','D','Em','F',
-  'A','Bb','Dm','E','Fm','Gm',
-  'A7','D7','G7','E7','Am7','Dm7','Cmaj7','Gmaj7',
-  'F#m','C#m','B','F#','Eb','Ab'
-];
+function drawDiag(svg,chord,W,H){
+  svg.innerHTML='';
+  const sh=SHAPES[chord];
+  if(!sh){svg.style.display='none';return;}
+  svg.style.display='block';
+  const ns='http://www.w3.org/2000/svg';
+  const fr=sh.fr||1;
+  const cols=5; const rows=4;
+  const padL=6,padR=W>50?14:8,padT=H>50?10:7,padB=4;
+  const gridW=W-padL-padR, gridH=H-padT-padB;
+  const sx=s=>padL+(6-s)*(gridW/5);
+  const fy=f=>padT+(f-fr)*(gridH/rows)+gridH/(rows*2);
 
-// ─── INIT ─────────────────────────────────────────────────
-function init() {
-  buildChordGrid(document.getElementById('chord-picker-grid'), applyChordFromSidebar);
-  buildChordGrid(document.getElementById('popup-grid'), applyChordFromPopup, true);
+  // nut or fret label
+  if(fr===1){
+    const n=document.createElementNS(ns,'line');
+    n.setAttribute('x1',padL);n.setAttribute('y1',padT);
+    n.setAttribute('x2',W-padR);n.setAttribute('y2',padT);
+    n.setAttribute('stroke','#1A1714');n.setAttribute('stroke-width','2.5');
+    svg.appendChild(n);
+  } else {
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',W-padR+2);t.setAttribute('y',padT+4);
+    t.setAttribute('font-size','6');t.setAttribute('fill','#D4780A');
+    t.textContent=fr+'fr';svg.appendChild(t);
+  }
+  // strings
+  for(let s=1;s<=6;s++){
+    const l=document.createElementNS(ns,'line');
+    l.setAttribute('x1',sx(s));l.setAttribute('y1',padT);
+    l.setAttribute('x2',sx(s));l.setAttribute('y2',padT+gridH);
+    l.setAttribute('stroke','#ccc');l.setAttribute('stroke-width','0.8');
+    svg.appendChild(l);
+  }
+  // frets
+  for(let i=0;i<=rows;i++){
+    const y=padT+i*(gridH/rows);
+    const l=document.createElementNS(ns,'line');
+    l.setAttribute('x1',padL);l.setAttribute('y1',y);
+    l.setAttribute('x2',W-padR);l.setAttribute('y2',y);
+    l.setAttribute('stroke','#ccc');l.setAttribute('stroke-width','0.8');
+    svg.appendChild(l);
+  }
+  // barre
+  if(sh.barre){
+    const b=sh.barre;
+    const y=padT+(b.fret-fr)*(gridH/rows);
+    const r=document.createElementNS(ns,'rect');
+    r.setAttribute('x',sx(b.from)-4);r.setAttribute('y',y-3);
+    r.setAttribute('width',sx(b.to)-sx(b.from)+8);r.setAttribute('height',gridH/rows*0.7);
+    r.setAttribute('rx','3');r.setAttribute('fill','#0F6E56');
+    svg.appendChild(r);
+  }
+  // dots
+  sh.dots.forEach(({s,f})=>{
+    const c=document.createElementNS(ns,'circle');
+    c.setAttribute('cx',sx(s));c.setAttribute('cy',fy(f));
+    c.setAttribute('r', W>50?4:3);c.setAttribute('fill','#0F6E56');
+    svg.appendChild(c);
+  });
+  // muted
+  (sh.muted||[]).forEach(s=>{
+    const t=document.createElementNS(ns,'text');
+    t.setAttribute('x',sx(s));t.setAttribute('y',padT-2);
+    t.setAttribute('font-size','7');t.setAttribute('fill','#aaa');
+    t.setAttribute('text-anchor','middle');t.textContent='x';
+    svg.appendChild(t);
+  });
+}
+
+function init(){
+  const grid=document.getElementById('chord-picker-grid');
+  CHORDS.forEach(ch=>{
+    const b=document.createElement('button');
+    b.className='chord-btn';b.textContent=ch;
+    b.onclick=()=>applyChordFromSidebar(ch);
+    grid.appendChild(b);
+  });
   addSection('Verse 1');
-  // Hide hint after first interaction
-  document.getElementById('editor-pane').addEventListener('click', () => {
-    setTimeout(() => document.getElementById('hint').classList.add('hidden'), 5000);
-  }, { once: true });
+  document.getElementById('editor-pane').addEventListener('click',()=>{
+    setTimeout(()=>document.getElementById('hint').classList.add('hidden'),6000);
+  },{once:true});
 }
 
-function buildChordGrid(container, handler, compact) {
-  const chords = compact ? COMMON_CHORDS.slice(0, 16) : COMMON_CHORDS;
-  container.innerHTML = '';
-  chords.forEach(ch => {
-    const btn = document.createElement('button');
-    btn.className = compact ? 'popup-chord-btn' : 'chord-btn';
-    btn.textContent = ch;
-    btn.onclick = () => handler(ch);
-    container.appendChild(btn);
-  });
-}
-
-// ─── SECTIONS ─────────────────────────────────────────────
-function addSection(defaultLabel) {
+function addSection(label){
   sectionCounter++;
-  const id = 'section-' + sectionCounter;
-  const block = document.createElement('div');
-  block.className = 'section-block';
-  block.id = id;
-  block.innerHTML = `
-    <div class="section-label-row">
-      <input class="section-label-input" value="${defaultLabel || ''}" placeholder="Section label..." />
-      <button class="remove-section-btn" onclick="removeSection('${id}')" title="Remove section">✕ remove</button>
-    </div>
-    <div class="lines-container"></div>
-    <button class="add-line-btn" onclick="addLine('${id}')">+ add line</button>
-  `;
+  const id='sec-'+sectionCounter;
+  const block=document.createElement('div');
+  block.className='section-block';block.id=id;
+  block.innerHTML=`<div class="section-label-row">
+    <input class="section-label-input" value="${label||''}" placeholder="Section label...">
+    <button class="remove-section-btn" onclick="removeSection('${id}')">✕ remove</button>
+  </div><div class="lines-container"></div>
+  <button class="add-line-btn" onclick="addLine('${id}')">+ add line</button>`;
   document.getElementById('sections-container').appendChild(block);
-  addLine(id);
-  addLine(id);
-  addLine(id);
+  addLine(id);addLine(id);addLine(id);
 }
 
-function removeSection(id) {
-  const el = document.getElementById(id);
-  if (el) { el.remove(); updateChordSummary(); }
+function removeSection(id){
+  document.getElementById(id)?.remove();updateSummary();
 }
 
-// ─── LINES ────────────────────────────────────────────────
-function addLine(sectionId, text) {
-  const section = document.getElementById(sectionId);
-  const container = section.querySelector('.lines-container');
-  const lineId = 'line-' + (++markerCounter);
+function addLine(secId,chordsData){
+  const sec=document.getElementById(secId);
+  const cont=sec.querySelector('.lines-container');
+  const lid='line-'+(++markerCounter);
+  const wrap=document.createElement('div');
+  wrap.className='lyric-line-wrapper';wrap.id=lid;
 
-  const wrapper = document.createElement('div');
-  wrapper.className = 'lyric-line-wrapper';
-  wrapper.id = lineId;
+  const handle=document.createElement('div');
+  handle.className='copy-handle';handle.title='Drag to copy chords to another line';
+  handle.textContent='⠿';
+  handle.addEventListener('mousedown',e=>onHandleDown(e,wrap));
 
-  // chord row (clickable band above the text)
-  const chordRow = document.createElement('div');
-  chordRow.className = 'chord-row';
-  chordRow.dataset.lineId = lineId;
-  chordRow.addEventListener('click', onChordRowClick);
+  const row=document.createElement('div');
+  row.className='chord-row';
+  row.addEventListener('click',e=>{if(!e.target.closest('.chord-marker'))onRowClick(e,row);});
 
-  // lyric text input
-  const textInput = document.createElement('input');
-  textInput.type = 'text';
-  textInput.className = 'lyric-text-input';
-  textInput.placeholder = 'Type lyric here...';
-  textInput.value = text || '';
-
-  // pressing Enter adds a new line below
-  textInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addLine(sectionId);
-      // focus new last line
-      const inputs = section.querySelectorAll('.lyric-text-input');
-      inputs[inputs.length - 1].focus();
-    }
-    if (e.key === 'Backspace' && textInput.value === '') {
-      // remove line if empty and not the only one
-      const allLines = container.querySelectorAll('.lyric-line-wrapper');
-      if (allLines.length > 1) {
-        wrapper.remove();
-        updateChordSummary();
-        const remaining = container.querySelectorAll('.lyric-text-input');
-        if (remaining.length) remaining[remaining.length - 1].focus();
-      }
+  const inp=document.createElement('input');
+  inp.type='text';inp.className='lyric-text-input';inp.placeholder='Type lyric here...';
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){e.preventDefault();addLine(secId);const ins=sec.querySelectorAll('.lyric-text-input');ins[ins.length-1].focus();}
+    if(e.key==='Backspace'&&inp.value===''){
+      const all=cont.querySelectorAll('.lyric-line-wrapper');
+      if(all.length>1){wrap.remove();updateSummary();const r=cont.querySelectorAll('.lyric-text-input');if(r.length)r[r.length-1].focus();}
     }
   });
 
-  wrapper.appendChild(chordRow);
-  wrapper.appendChild(textInput);
+  wrap.appendChild(handle);wrap.appendChild(row);wrap.appendChild(inp);
+  cont.appendChild(wrap);
 
-  // insert before the "add line" button
-  const addBtn = section.querySelector('.add-line-btn');
-  container.appendChild(wrapper);
+  if(chordsData){chordsData.forEach(({pct,chord})=>{const m=placeMarker(row,pct,false);if(chord)nameMarker(m,chord,false);});updateSummary();}
 }
 
-// ─── CHORD ROW CLICK ──────────────────────────────────────
-function onChordRowClick(e) {
-  const row = e.currentTarget;
-  const rect = row.getBoundingClientRect();
-  const clickX = e.clientX - rect.left;
-  const pct = (clickX / rect.width) * 100;
-
-  // place a new unnamed marker
-  placeMarker(row, pct);
+// ─── DRAG TO COPY ─────────────────────────────────────────
+function onHandleDown(e,wrap){
+  e.preventDefault();
+  const row=wrap.querySelector('.chord-row');
+  const data=getRowChords(row);
+  if(!data.length)return;
+  dragSourceRow=row;
+  const ghost=document.getElementById('drag-ghost');
+  ghost.textContent='⠿  '+data.map(d=>d.chord||'?').join('  ');
+  ghost.style.display='block';
+  moveGhost(e);
+  wrap.querySelector('.copy-handle').classList.add('dragging');
+  document.addEventListener('mousemove',onDragMove);
+  document.addEventListener('mouseup',onDragUp);
+}
+function moveGhost(e){
+  const g=document.getElementById('drag-ghost');
+  g.style.left=e.clientX+'px';g.style.top=(e.clientY-20)+'px';
+}
+function onDragMove(e){
+  moveGhost(e);
+  document.querySelectorAll('.chord-row').forEach(r=>r.classList.remove('drop-target'));
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  const target=el?.closest('.chord-row');
+  if(target&&target!==dragSourceRow)target.classList.add('drop-target');
+}
+function onDragUp(e){
+  document.removeEventListener('mousemove',onDragMove);
+  document.removeEventListener('mouseup',onDragUp);
+  document.getElementById('drag-ghost').style.display='none';
+  document.querySelectorAll('.copy-handle').forEach(h=>h.classList.remove('dragging'));
+  const el=document.elementFromPoint(e.clientX,e.clientY);
+  const target=el?.closest('.chord-row');
+  if(target&&target!==dragSourceRow)copyRow(dragSourceRow,target);
+  document.querySelectorAll('.chord-row').forEach(r=>r.classList.remove('drop-target'));
+  dragSourceRow=null;
+}
+function copyRow(src,tgt){
+  const data=getRowChords(src);if(!data.length)return;
+  tgt.querySelectorAll('.chord-marker').forEach(m=>m.remove());
+  data.forEach(({pct,chord})=>{const m=placeMarker(tgt,pct,false);if(chord)nameMarker(m,chord,false);});
+  updateSummary();
+  tgt.style.background='rgba(15,110,86,0.12)';
+  setTimeout(()=>tgt.style.background='',600);
+}
+function getRowChords(row){
+  return Array.from(row.querySelectorAll('.chord-marker'))
+    .sort((a,b)=>parseFloat(a.dataset.pct)-parseFloat(b.dataset.pct))
+    .map(m=>({pct:parseFloat(m.dataset.pct),chord:m.dataset.chord}));
 }
 
-function placeMarker(row, pct) {
-  const markerId = 'marker-' + (++markerCounter);
-  const marker = document.createElement('div');
-  marker.className = 'chord-marker unnamed';
-  marker.id = markerId;
-  marker.style.left = pct + '%';
-  marker.dataset.chord = '';
-  marker.dataset.pct = pct;
-
-  const label = document.createElement('span');
-  label.className = 'marker-label';
-  label.textContent = '?';
-  marker.appendChild(label);
-
-  marker.addEventListener('click', e => {
-    e.stopPropagation();
-    selectMarker(marker, e);
-  });
-
-  row.appendChild(marker);
-  selectMarker(marker);
-  updateChordSummary();
+// ─── MARKERS ──────────────────────────────────────────────
+function onRowClick(e,row){
+  const rect=row.getBoundingClientRect();
+  placeMarker(row,((e.clientX-rect.left)/rect.width)*100);
 }
-
-// ─── MARKER SELECTION ─────────────────────────────────────
-function selectMarker(marker, e) {
-  // deselect previous
-  if (selectedMarker && selectedMarker !== marker) {
-    selectedMarker.style.outline = '';
+function placeMarker(row,pct,doSelect=true){
+  const id='mk-'+(++markerCounter);
+  const m=document.createElement('div');
+  m.className='chord-marker unnamed';m.id=id;
+  m.style.left=pct+'%';m.dataset.chord='';m.dataset.pct=pct;
+  const lbl=document.createElement('span');lbl.className='marker-label';lbl.textContent='?';
+  m.appendChild(lbl);
+  m.addEventListener('click',e=>{e.stopPropagation();selectMarker(m,e);});
+  row.appendChild(m);
+  if(doSelect){selectMarker(m);updateSummary();}
+  return m;
+}
+function selectMarker(m,e){
+  if(selectedMarker&&selectedMarker!==m)selectedMarker.style.outline='';
+  if(selectedMarker===m&&e){removeMarker(m);return;}
+  selectedMarker=m;
+  m.style.outline='2px solid var(--amber)';m.style.outlineOffset='2px';
+  const ch=m.dataset.chord;
+  document.getElementById('picker-status').innerHTML=ch?`Selected: <strong>${ch}</strong> — pick to change`:'Selected — pick a chord below';
+  document.querySelectorAll('.chord-btn').forEach(b=>b.classList.toggle('selected',b.textContent===ch));
+  document.getElementById('custom-chord-input').value=ch||'';
+  showMiniDiagram(ch);
+}
+function removeMarker(m){
+  m.remove();selectedMarker=null;
+  document.getElementById('picker-status').textContent='Click a marker to name it';
+  document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('selected'));
+  hideMiniDiagram();updateSummary();
+}
+function applyChordFromSidebar(ch){if(selectedMarker)nameMarker(selectedMarker,ch);}
+function applyCustomChord(){const v=document.getElementById('custom-chord-input').value.trim();if(v&&selectedMarker)nameMarker(selectedMarker,v);}
+function nameMarker(m,ch,deselect=true){
+  m.dataset.chord=ch;m.querySelector('.marker-label').textContent=ch;
+  m.classList.remove('unnamed');m.classList.add('named');
+  if(deselect){
+    m.style.outline='';selectedMarker=null;
+    document.getElementById('picker-status').textContent='Click a marker to name it';
+    document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('selected'));
+    hideMiniDiagram();updateSummary();
   }
+}
 
-  // if clicking an already-selected marker, remove it
-  if (selectedMarker === marker && e) {
-    removeMarker(marker);
-    return;
+// ─── MINI DIAGRAM ─────────────────────────────────────────
+function showMiniDiagram(ch){
+  const box=document.getElementById('mini-box');
+  const svg=document.getElementById('mini-svg');
+  if(ch&&SHAPES[ch]){
+    document.getElementById('mini-name').textContent=ch;
+    drawDiag(svg,ch,68,62);
+    box.classList.add('visible');
+  } else {
+    box.classList.remove('visible');
   }
-
-  selectedMarker = marker;
-  marker.style.outline = '2px solid var(--amber)';
-  marker.style.outlineOffset = '2px';
-
-  const chordName = marker.dataset.chord || '(unnamed)';
-  document.getElementById('picker-status').innerHTML =
-    `Selected: <strong>${chordName}</strong> — pick a name below`;
-
-  // highlight matching chord btn in sidebar
-  document.querySelectorAll('.chord-btn').forEach(b => {
-    b.classList.toggle('selected', b.textContent === marker.dataset.chord);
-  });
-  document.getElementById('custom-chord-input').value = marker.dataset.chord || '';
 }
+function hideMiniDiagram(){document.getElementById('mini-box').classList.remove('visible');}
 
-function removeMarker(marker) {
-  marker.remove();
-  selectedMarker = null;
-  document.getElementById('picker-status').textContent = 'Click a marker to name it';
-  document.querySelectorAll('.chord-btn').forEach(b => b.classList.remove('selected'));
-  updateChordSummary();
-}
-
-// ─── APPLY CHORD ──────────────────────────────────────────
-function applyChordFromSidebar(chordName) {
-  if (!selectedMarker) return;
-  nameMarker(selectedMarker, chordName);
-}
-
-function applyChordFromPopup(chordName) {
-  if (!selectedMarker) return;
-  nameMarker(selectedMarker, chordName);
-  closePopup();
-}
-
-function applyCustomChord() {
-  const val = document.getElementById('custom-chord-input').value.trim();
-  if (val && selectedMarker) nameMarker(selectedMarker, val);
-}
-
-function nameMarker(marker, chordName) {
-  marker.dataset.chord = chordName;
-  marker.querySelector('.marker-label').textContent = chordName;
-  marker.classList.remove('unnamed');
-  marker.classList.add('named');
-  marker.style.outline = '';
-  selectedMarker = null;
-
-  document.getElementById('picker-status').textContent = 'Click a marker to name it';
-  document.querySelectorAll('.chord-btn').forEach(b => b.classList.remove('selected'));
-  updateChordSummary();
-}
-
-// ─── CHORD SUMMARY ────────────────────────────────────────
-function updateChordSummary() {
-  const list = document.getElementById('chord-summary-list');
-  const markers = document.querySelectorAll('.chord-marker[data-chord]');
-  const named = Array.from(markers).filter(m => m.dataset.chord);
-
-  if (named.length === 0) {
-    list.innerHTML = '<li class="summary-empty">No chords placed yet</li>';
-    return;
-  }
-
-  // collect unique chords in order
-  const seen = new Set();
-  const items = [];
-  named.forEach(m => {
-    const ch = m.dataset.chord;
-    if (!seen.has(ch)) { seen.add(ch); items.push(ch); }
-  });
-
-  list.innerHTML = items.map(ch => `
-    <li class="chord-summary-item">
+// ─── SUMMARY ──────────────────────────────────────────────
+function updateSummary(){
+  const list=document.getElementById('chord-summary-list');
+  const named=Array.from(document.querySelectorAll('.chord-marker[data-chord]')).filter(m=>m.dataset.chord);
+  if(!named.length){list.innerHTML='<li class="summary-empty">No chords placed yet</li>';return;}
+  const seen=new Set(),items=[];
+  named.forEach(m=>{const c=m.dataset.chord;if(!seen.has(c)){seen.add(c);items.push(c);}});
+  list.innerHTML=items.map(ch=>{
+    const sid='ssvg-'+ch.replace(/[^a-zA-Z0-9]/g,'_');
+    const hasDiag=!!SHAPES[ch];
+    return `<li class="chord-summary-item">
       <span class="summary-chord-pill">${ch}</span>
-      <span class="summary-location">${countChord(named, ch)}× in song</span>
-    </li>
-  `).join('');
+      <div class="summary-right">
+        ${hasDiag?`<svg id="${sid}" width="48" height="42" viewBox="0 0 48 42" xmlns="http://www.w3.org/2000/svg"></svg>`:'<span style="font-size:.65rem;color:var(--ink-faint);font-style:italic">no diagram</span>'}
+        <span class="summary-count">${named.filter(m=>m.dataset.chord===ch).length}× in song</span>
+      </div>
+    </li>`;
+  }).join('');
+  items.forEach(ch=>{
+    const el=document.getElementById('ssvg-'+ch.replace(/[^a-zA-Z0-9]/g,'_'));
+    if(el)drawDiag(el,ch,48,42);
+  });
 }
-
-function countChord(markers, ch) {
-  return markers.filter(m => m.dataset.chord === ch).length;
-}
-
-// ─── POPUP ────────────────────────────────────────────────
-function closePopup() {
-  document.getElementById('chord-popup').classList.remove('visible');
-}
-document.addEventListener('click', e => {
-  const popup = document.getElementById('chord-popup');
-  if (!popup.contains(e.target)) closePopup();
-});
 
 // ─── CLEAR / EXPORT ───────────────────────────────────────
-function clearAll() {
-  if (!confirm('Clear everything?')) return;
-  document.getElementById('song-title').value = '';
-  document.getElementById('sections-container').innerHTML = '';
-  sectionCounter = 0;
-  markerCounter = 0;
-  selectedMarker = null;
-  addSection('Verse 1');
-  updateChordSummary();
+function clearAll(){
+  if(!confirm('Clear everything?'))return;
+  document.getElementById('song-title').value='';
+  document.getElementById('sections-container').innerHTML='';
+  sectionCounter=0;markerCounter=0;selectedMarker=null;
+  addSection('Verse 1');updateSummary();
 }
-
-function exportChordSheet() {
-  const title = document.getElementById('song-title').value || 'Untitled';
-  let out = title + '\n' + '='.repeat(title.length) + '\n\n';
-
-  document.querySelectorAll('.section-block').forEach(sec => {
-    const label = sec.querySelector('.section-label-input').value;
-    if (label) out += '[' + label + ']\n';
-    sec.querySelectorAll('.lyric-line-wrapper').forEach(wrapper => {
-      const chordRow = wrapper.querySelector('.chord-row');
-      const text = wrapper.querySelector('.lyric-text-input').value;
-      const markers = Array.from(chordRow.querySelectorAll('.chord-marker'))
-        .filter(m => m.dataset.chord)
-        .sort((a, b) => parseFloat(a.dataset.pct) - parseFloat(b.dataset.pct));
-
-      if (markers.length) {
-        out += markers.map(m => m.dataset.chord).join('  ') + '\n';
-      }
-      if (text) out += text + '\n';
+function exportChordSheet(){
+  const title=document.getElementById('song-title').value||'Untitled';
+  let out=title+'\n'+'='.repeat(title.length)+'\n\n';
+  document.querySelectorAll('.section-block').forEach(sec=>{
+    const lbl=sec.querySelector('.section-label-input').value;
+    if(lbl)out+='['+lbl+']\n';
+    sec.querySelectorAll('.lyric-line-wrapper').forEach(w=>{
+      const row=w.querySelector('.chord-row');
+      const txt=w.querySelector('.lyric-text-input').value;
+      const mks=Array.from(row.querySelectorAll('.chord-marker')).filter(m=>m.dataset.chord).sort((a,b)=>parseFloat(a.dataset.pct)-parseFloat(b.dataset.pct));
+      if(mks.length)out+=mks.map(m=>m.dataset.chord).join('  ')+'\n';
+      if(txt)out+=txt+'\n';
     });
-    out += '\n';
+    out+='\n';
   });
-
-  const blob = new Blob([out], { type: 'text/plain' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = title.replace(/\s+/g, '-').toLowerCase() + '-chords.txt';
-  a.click();
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([out],{type:'text/plain'}));
+  a.download=(title.replace(/\s+/g,'-').toLowerCase())+'-chords.txt';a.click();
 }
-
-// ─── KEYBOARD: Escape deselects ───────────────────────────
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') {
-    if (selectedMarker) {
-      selectedMarker.style.outline = '';
-      selectedMarker = null;
-      document.getElementById('picker-status').textContent = 'Click a marker to name it';
-      document.querySelectorAll('.chord-btn').forEach(b => b.classList.remove('selected'));
-    }
-    closePopup();
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(selectedMarker){selectedMarker.style.outline='';selectedMarker=null;}
+    document.getElementById('picker-status').textContent='Click a marker to name it';
+    document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('selected'));
+    hideMiniDiagram();
   }
-  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedMarker && document.activeElement.tagName !== 'INPUT') {
-    removeMarker(selectedMarker);
-  }
+  if((e.key==='Delete'||e.key==='Backspace')&&selectedMarker&&document.activeElement.tagName!=='INPUT')removeMarker(selectedMarker);
 });
-
 init();
 </script>
 </body>
