@@ -239,6 +239,71 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
   .hum-btn{padding:1rem}
 }
 
+/* ── SONG LIBRARY MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,23,20,.5);z-index:200;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.modal-overlay.hidden{display:none}
+.modal{background:white;border-radius:16px;padding:1.5rem;width:min(520px,92vw);max-height:80vh;display:flex;flex-direction:column;gap:1rem;box-shadow:0 24px 60px rgba(26,23,20,.2)}
+.modal-header{display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Instrument Serif',serif;font-size:1.4rem;color:var(--ink);letter-spacing:-.02em}
+.modal-close{background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--ink-muted);padding:.25rem;border-radius:4px;line-height:1}
+.modal-close:hover{color:var(--red)}
+.song-list{list-style:none;display:flex;flex-direction:column;gap:.4rem;overflow-y:auto;max-height:50vh}
+.song-list-item{display:flex;align-items:center;gap:.6rem;padding:.6rem .75rem;border-radius:8px;border:1px solid var(--border);cursor:pointer;transition:all .15s}
+.song-list-item:hover{border-color:var(--teal);background:var(--teal-light)}
+.song-item-name{font-family:'Instrument Serif',serif;font-size:1rem;color:var(--ink);flex:1}
+.song-item-meta{font-size:.68rem;color:var(--ink-muted)}
+.song-item-del{background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:.75rem;padding:.2rem .3rem;border-radius:4px;transition:color .15s}
+.song-item-del:hover{color:var(--red)}
+.modal-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+.songs-empty{font-size:.82rem;color:var(--ink-faint);font-style:italic;text-align:center;padding:1rem 0}
+/* ── SECTION MIRROR ── */
+.mirror-badge{font-size:.62rem;font-weight:500;background:var(--teal-light);color:var(--teal);border:1px solid rgba(15,110,86,.2);padding:.1rem .4rem;border-radius:100px;cursor:pointer;transition:all .15s}
+.mirror-badge.active-mirror{background:var(--teal);color:white}
+.mirror-select{font-size:.68rem;font-family:'DM Mono',monospace;background:white;border:1px solid var(--border-mid);border-radius:5px;padding:.18rem .3rem;color:var(--ink);cursor:pointer;max-width:90px}
+/* ── RHYME PANEL ── */
+.rhyme-panel{background:var(--cream);border:1px solid var(--border);border-radius:12px;padding:.875rem}
+.rhyme-input-row{display:flex;gap:.4rem;margin-bottom:.5rem}
+.rhyme-input{font-family:'DM Mono',monospace;font-size:.8rem;flex:1;padding:.35rem .55rem;border-radius:6px;border:1px solid var(--border-mid);background:white;color:var(--ink);outline:none;transition:border-color .15s}
+.rhyme-input:focus{border-color:var(--amber)}
+.rhyme-find-btn{padding:.35rem .7rem;border-radius:6px;border:none;background:var(--ink);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500;cursor:pointer;transition:background .15s}
+.rhyme-find-btn:hover{background:var(--amber)}
+.rhyme-results{display:flex;flex-wrap:wrap;gap:.3rem;min-height:24px}
+.rhyme-chip{font-family:'DM Mono',monospace;font-size:.7rem;background:white;border:1px solid var(--border-mid);color:var(--ink);padding:.18rem .5rem;border-radius:5px;cursor:pointer;transition:all .12s}
+.rhyme-chip:hover{background:var(--amber-light);border-color:var(--amber);color:var(--amber)}
+.rhyme-none{font-size:.72rem;color:var(--ink-faint);font-style:italic}
+/* ── CAPO SUGGESTION ── */
+.capo-suggest-panel{background:var(--amber-light);border:1px solid rgba(212,120,10,.2);border-radius:12px;padding:.875rem;display:none}
+.capo-suggest-panel.visible{display:block}
+.capo-suggest-item{display:flex;align-items:center;gap:.5rem;padding:.35rem 0;border-bottom:1px solid rgba(212,120,10,.1);flex-wrap:wrap}
+.capo-suggest-item:last-child{border-bottom:none}
+.capo-suggest-desc{font-size:.75rem;color:var(--ink);flex:1}
+.capo-suggest-shapes{font-family:'DM Mono',monospace;font-size:.68rem;color:var(--amber)}
+.capo-apply-btn{font-size:.65rem;padding:.18rem .45rem;border-radius:4px;border:1px solid var(--amber);background:transparent;color:var(--amber);cursor:pointer;transition:all .12s;white-space:nowrap}
+.capo-apply-btn:hover{background:var(--amber);color:white}
+/* ── TEMPO / FEEL ── */
+.tempo-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.5rem}
+.tempo-input{font-family:'DM Mono',monospace;font-size:.82rem;width:64px;padding:.3rem .5rem;border-radius:6px;border:1px solid var(--border-mid);background:white;color:var(--ink);outline:none;text-align:center}
+.tempo-input:focus{border-color:var(--amber)}
+.feel-btn{font-size:.68rem;font-weight:500;padding:.22rem .55rem;border-radius:100px;border:1px solid var(--border-mid);background:transparent;color:var(--ink-muted);cursor:pointer;transition:all .12s}
+.feel-btn:hover{color:var(--ink);border-color:var(--ink)}
+.feel-btn.active{background:var(--teal);color:white;border-color:var(--teal)}
+/* ── MELODY DETECT / PROGRESSION SUGGEST ── */
+.melody-detect-btn{width:100%;padding:.65rem;border-radius:10px;border:2px solid var(--border-mid);background:white;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:500;color:var(--ink);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:.6rem}
+.melody-detect-btn:hover{border-color:var(--amber);color:var(--amber)}
+.melody-detect-btn.listening{background:var(--red);border-color:var(--red);color:white;animation:humPulse 1s ease-in-out infinite}
+.melody-detect-btn.analysing{background:var(--amber);border-color:var(--amber);color:white}
+.prog-suggestion-item{background:white;border:1px solid var(--border);border-radius:8px;padding:.6rem .75rem;margin-bottom:.4rem;cursor:pointer;transition:all .15s}
+.prog-suggestion-item:hover{border-color:var(--teal);background:var(--teal-light)}
+.prog-name{font-size:.68rem;font-weight:500;color:var(--ink-muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:.15rem}
+.prog-chords{font-family:'DM Mono',monospace;font-size:.82rem;color:var(--teal);font-weight:500;margin-bottom:.2rem}
+.prog-actions{display:flex;gap:.4rem}
+.prog-use-btn{font-size:.65rem;font-family:'DM Mono',monospace;padding:.15rem .45rem;border-radius:4px;border:1px solid rgba(15,110,86,.3);background:transparent;color:var(--teal);cursor:pointer;transition:all .12s}
+.prog-use-btn:hover{background:var(--teal);color:white}
+.prog-play-btn{font-size:.65rem;font-family:'DM Mono',monospace;padding:.15rem .45rem;border-radius:4px;border:1px solid rgba(212,120,10,.3);background:transparent;color:var(--amber);cursor:pointer;transition:all .12s}
+.prog-play-btn:hover,.prog-play-btn.playing{background:var(--amber);color:white}
+.detected-key-display{font-size:.75rem;color:var(--teal);font-weight:500;text-align:center;margin-bottom:.5rem;min-height:1em}
+.lib-btn{font-size:.78rem;font-weight:500;padding:.38rem .85rem;border-radius:100px;border:1px solid var(--border-mid);background:transparent;color:var(--ink-muted);cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:.3rem}
+.lib-btn:hover{border-color:var(--ink);color:var(--ink)}
 </style>
 </head>
 <body>
@@ -253,6 +318,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
     <div class="capo-row" id="capo-row"></div>
   </div>
   <div class="header-actions">
+    <button class="lib-btn" onclick="openSongLibrary()">📚 Songs</button>
     <div class="undo-redo">
       <button class="undo-redo-btn" id="undo-btn" onclick="undo()" title="Undo (Cmd+Z)" disabled>↩</button>
       <button class="undo-redo-btn" id="redo-btn" onclick="redo()" title="Redo (Cmd+Shift+Z)" disabled>↪</button>
@@ -377,9 +443,64 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
       <p class="panel-title">Chords in this song</p>
       <ul class="summary-list" id="summary-list"><li class="summary-empty">No chords placed yet</li></ul>
     </div>
+
+    <!-- TEMPO & FEEL -->
+    <div class="panel">
+      <p class="panel-title">Tempo & Feel</p>
+      <div class="tempo-row">
+        <input class="tempo-input" id="tempo-input" type="number" min="40" max="240" placeholder="BPM" oninput="triggerSave()">
+        <span style="font-size:.72rem;color:var(--ink-muted)">BPM</span>
+      </div>
+      <div class="pill-row" id="feel-row"></div>
+    </div>
+
+    <!-- CAPO SUGGESTION -->
+    <div class="panel">
+      <p class="panel-title">Capo suggestion</p>
+      <p style="font-size:.72rem;color:var(--ink-muted);margin-bottom:.5rem">Based on your locked chords, you could use a capo to play simpler shapes:</p>
+      <div id="capo-suggest-panel" class="capo-suggest-panel"></div>
+      <p id="capo-suggest-none" style="font-size:.72rem;color:var(--ink-faint);font-style:italic">Add and lock some chords first</p>
+    </div>
+
+    <!-- RHYME ASSISTANT -->
+    <div class="rhyme-panel">
+      <p class="panel-title">Rhyme assistant</p>
+      <div class="rhyme-input-row">
+        <input class="rhyme-input" id="rhyme-input" placeholder="Type a word..." maxlength="30" onkeydown="if(event.key==='Enter')findRhymes()">
+        <button class="rhyme-find-btn" onclick="findRhymes()">Find</button>
+      </div>
+      <div class="rhyme-results" id="rhyme-results"></div>
+    </div>
+
+    <!-- MELODY → PROGRESSION -->
+    <div class="panel">
+      <p class="panel-title">Melody to progression</p>
+      <p style="font-size:.72rem;color:var(--ink-muted);margin-bottom:.6rem">Hum your melody for 5–10 seconds. The app detects the key and suggests chord progressions.</p>
+      <button class="melody-detect-btn" id="melody-detect-btn" onmousedown="startMelodyListen()" onmouseup="stopMelodyListen()" ontouchstart="startMelodyListen(event)" ontouchend="stopMelodyListen()">
+        <span>🎵</span><span id="melody-btn-label">Hold to hum melody</span>
+      </button>
+      <p class="detected-key-display" id="detected-key-display"></p>
+      <div id="prog-suggestions"></div>
+    </div>
+
   </div>
 </div>
 <div class="drag-ghost" id="drag-ghost"></div>
+
+<!-- SONG LIBRARY MODAL -->
+<div class="modal-overlay hidden" id="song-library-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Song Library</span>
+      <button class="modal-close" onclick="closeSongLibrary()">✕</button>
+    </div>
+    <ul class="song-list" id="song-list"></ul>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="saveCurrentSong()">Save current song</button>
+      <button class="btn" onclick="newSong()">New song</button>
+    </div>
+  </div>
+</div>
 
 <!-- SAVE TOAST -->
 <div class="save-toast" id="save-toast">✓ Saved</div>
@@ -843,11 +964,19 @@ function drawDiag(svg,chord,W,H,t){
 function addSection(label){
   sectionCounter++;const id='sec-'+sectionCounter;
   const block=document.createElement('div');block.className='section-block';block.id=id;
-  block.innerHTML=`<div class="section-label-row"><input class="section-label-input" value="${label||''}" placeholder="Section..."><button class="remove-section-btn" onclick="removeSection('${id}')">✕ remove</button></div><div class="lines-container"></div><button class="add-line-btn" onclick="addLine('${id}')">+ add line</button>`;
+  block.innerHTML=`<div class="section-label-row">
+    <input class="section-label-input" value="${escapeHTML(label||'')}" placeholder="Section..." oninput="triggerSave()">
+    <select class="mirror-select" id="mirror-${id}" title="Mirror chords from another section" onchange="applyMirror('${id}',this.value)">
+      <option value="">↔ mirror...</option>
+    </select>
+    <button class="remove-section-btn" onclick="removeSection('${id}')">✕ remove</button>
+  </div><div class="lines-container"></div>
+  <button class="add-line-btn" onclick="addLine('${id}')">+ add line</button>`;
   document.getElementById('sections-container').appendChild(block);
   addLine(id);addLine(id);addLine(id);
+  refreshMirrorDropdowns();
 }
-function removeSection(id){document.getElementById(id)?.remove();updateSummary();updateLiveKeyContext();saveSnapshot();}
+function removeSection(id){document.getElementById(id)?.remove();updateSummary();updateLiveKeyContext();refreshMirrorDropdowns();suggestCapo();saveSnapshot();}
 
 function addLine(secId,chordsData){
   const sec=document.getElementById(secId),cont=sec.querySelector('.lines-container');
@@ -1291,6 +1420,9 @@ function exportSheet(){
   const kc=detectKey(lockedSounding);
   let out=title+'\n'+'='.repeat(title.length)+'\nTuning: '+TUNING_LABELS[tuning]+'\nCapo: '+capo+'\n';
   if(kc)out+='Detected key: '+kc.key+' '+kc.mode+'\n';
+  const tempo=document.getElementById('tempo-input')?.value;
+  if(tempo)out+='Tempo: '+tempo+' BPM\n';
+  if(songFeel)out+='Feel: '+songFeel+'\n';
   const locked=getLockedChordNames();
   if(locked.length)out+='Locked chords: '+locked.join(', ')+'\n';
   out+='\n';
@@ -1336,7 +1468,8 @@ function serializeState(){
       // it's custom in this tuning
     }
   });
-  return{version:2,title:document.getElementById('song-title').value,tuning,capo,key,mode,typeFilter,sections,customShapes};
+  return{version:2,title:document.getElementById('song-title').value,tuning,capo,key,mode,typeFilter,
+    tempo:document.getElementById('tempo-input')?.value||'',feel:songFeel,sections,customShapes};
 }
 
 function restoreState(state){
@@ -1379,6 +1512,12 @@ function restoreState(state){
   });
 
   buildChordGrid();updateSummary();updateLockPanel();updateLiveKeyContext();
+  // Restore tempo and feel
+  const tempoEl=document.getElementById('tempo-input');
+  if(tempoEl)tempoEl.value=state.tempo||'';
+  songFeel=state.feel||'';
+  buildFeelRow();
+  refreshMirrorDropdowns();
   syncMobileContent();
 }
 
@@ -1717,8 +1856,536 @@ function syncMobileContent(){
 }
 
 // ═══════════════════════════════════════════════
-// PATCH: Wire saveSnapshot into key actions
+// SONG LIBRARY
 // ═══════════════════════════════════════════════
+const LIBRARY_KEY='chordlock-library';
+
+function getSongLibrary(){
+  try{return JSON.parse(localStorage.getItem(LIBRARY_KEY)||'[]');}
+  catch(e){return[];}
+}
+function saveSongLibrary(lib){
+  try{localStorage.setItem(LIBRARY_KEY,JSON.stringify(lib));}catch(e){}
+}
+
+function openSongLibrary(){
+  document.getElementById('song-library-modal').classList.remove('hidden');
+  renderSongList();
+}
+function closeSongLibrary(){
+  document.getElementById('song-library-modal').classList.add('hidden');
+}
+
+function renderSongList(){
+  const lib=getSongLibrary();
+  const ul=document.getElementById('song-list');
+  if(!lib.length){ul.innerHTML='<li class="songs-empty">No saved songs yet.<br>Click "Save current song" to add this one.</li>';return;}
+  ul.innerHTML=lib.map((s,i)=>`
+    <li class="song-list-item" onclick="loadSong(${i})">
+      <span class="song-item-name">${escapeHTML(s.title||'Untitled')}</span>
+      <span class="song-item-meta">${s.tuning||'standard'} · ${new Date(s.savedAt||0).toLocaleDateString()}</span>
+      <button class="song-item-del" onclick="event.stopPropagation();deleteSong(${i})" title="Delete">✕</button>
+    </li>`).join('');
+}
+
+function saveCurrentSong(){
+  const state=serializeState();
+  state.savedAt=Date.now();
+  const lib=getSongLibrary();
+  // Update existing if same title, else add
+  const existing=lib.findIndex(s=>s.title===state.title&&state.title);
+  if(existing>=0)lib[existing]=state;
+  else lib.unshift(state);
+  saveSongLibrary(lib.slice(0,50)); // cap at 50 songs
+  renderSongList();
+  showSaveToast();
+}
+
+function loadSong(idx){
+  if(!confirm('Load this song? Unsaved changes to the current song will be lost.'))return;
+  const lib=getSongLibrary();
+  if(!lib[idx])return;
+  restoreState(lib[idx]);
+  closeSongLibrary();
+}
+
+function deleteSong(idx){
+  if(!confirm('Delete this song?'))return;
+  const lib=getSongLibrary();
+  lib.splice(idx,1);
+  saveSongLibrary(lib);
+  renderSongList();
+}
+
+function newSong(){
+  if(!confirm('Start a new song? Save the current one first if needed.'))return;
+  closeSongLibrary();
+  clearAll();
+}
+
+// ═══════════════════════════════════════════════
+// SECTION MIRRORING
+// ═══════════════════════════════════════════════
+function refreshMirrorDropdowns(){
+  const sections=document.querySelectorAll('.section-block');
+  sections.forEach(sec=>{
+    const sel=document.getElementById('mirror-'+sec.id);
+    if(!sel)return;
+    const current=sel.value;
+    sel.innerHTML='<option value="">↔ mirror...</option>';
+    sections.forEach(other=>{
+      if(other.id===sec.id)return;
+      const label=other.querySelector('.section-label-input').value||other.id;
+      const opt=document.createElement('option');
+      opt.value=other.id;opt.textContent=label;
+      if(opt.value===current)opt.selected=true;
+      sel.appendChild(opt);
+    });
+  });
+}
+
+function applyMirror(targetId,sourceId){
+  if(!sourceId)return;
+  const source=document.getElementById(sourceId);
+  const target=document.getElementById(targetId);
+  if(!source||!target)return;
+
+  const sourceLines=Array.from(source.querySelectorAll('.lyric-line-wrapper'));
+  const targetCont=target.querySelector('.lines-container');
+
+  // Clear existing markers on target lines, copy chord pattern
+  const targetLines=Array.from(target.querySelectorAll('.lyric-line-wrapper'));
+
+  sourceLines.forEach((srcWrap,i)=>{
+    const srcRow=srcWrap.querySelector('.chord-row');
+    const srcMarkers=Array.from(srcRow.querySelectorAll('.chord-marker'))
+      .filter(m=>m.dataset.chord)
+      .sort((a,b)=>parseFloat(a.dataset.pct)-parseFloat(b.dataset.pct));
+
+    let tgtWrap=targetLines[i];
+    if(!tgtWrap){
+      addLine(targetId);
+      tgtWrap=target.querySelectorAll('.lyric-line-wrapper')[i];
+    }
+    if(!tgtWrap)return;
+
+    const tgtRow=tgtWrap.querySelector('.chord-row');
+    tgtRow.querySelectorAll('.chord-marker').forEach(m=>m.remove());
+    srcMarkers.forEach(({dataset:{pct,chord}})=>{
+      const m=placeMarker(tgtRow,parseFloat(pct),false);
+      if(chord)nameMarker(m,chord,false);
+    });
+  });
+
+  // Flash the target section
+  target.style.outline='2px solid var(--teal)';
+  target.style.borderRadius='8px';
+  setTimeout(()=>{target.style.outline='';target.style.borderRadius='';},700);
+  updateSummary();saveSnapshot();
+}
+
+// ═══════════════════════════════════════════════
+// RHYME ASSISTANT
+// ═══════════════════════════════════════════════
+// Built-in rhyme database — common vowel sound groups
+// Covers the most useful rhyme classes for songwriting
+const RHYME_DB={
+  ay:['day','say','way','play','stay','pray','sway','stray','away','today','okay','hey','pay','ray','lay','may','gay','grey','bay','display','portray','relay'],
+  ee:['see','free','be','me','we','tree','dream','need','feel','real','heal','deal','steal','reveal','believe','leave','breathe','grieve','achieve','receive'],
+  ight:['night','light','right','fight','might','sight','bright','flight','write','white','quite','bite','tight','slight','plight','ignite','delight','tonight'],
+  ove:['love','above','dove','shove','of','push','rush','hush','touch','much','such'],
+  ine:['mine','fine','line','wine','shine','time','rhyme','climb','find','mind','blind','kind','sign','divine','define','combine','design','decline'],
+  ain:['rain','pain','train','gain','plain','vain','brain','chain','main','lane','sane','insane','explain','remain','refrain','complain','sustain','maintain'],
+  one:['alone','stone','bone','phone','zone','tone','home','known','blown','grown','shown','thrown','own','moan','groan','loan','atone'],
+  ound:['sound','found','ground','around','bound','round','wound','profound','surround','astound','compound'],
+  ong:['song','long','strong','wrong','along','belong','among','gone','on','dawn','drawn','torn','worn','born','sworn','mourn','adorn'],
+  ire:['fire','higher','desire','inspire','entire','retire','admire','require','aspire','liar','wire','choir'],
+  old:['hold','gold','cold','bold','told','sold','fold','old','unfold','behold','control','roll','soul','whole','goal','stroll'],
+  eart:['heart','start','part','dark','spark','art','apart','restart','smart','chart','depart','impart'],
+  un:['run','sun','fun','done','one','won','begun','undone','someone','none','gun','numb','come','some','drum','overcome'],
+  ive:['live','give','forgive','strive','drive','alive','arrive','survive','thrive','dive','side','ride','hide','guide','wide','pride','stride','inside','decide','provide'],
+  are:['care','there','where','share','bare','dare','fair','hair','air','prayer','anywhere','everywhere','aware','compare','prepare','repair','declare','despair'],
+  ight2:['eyes','cries','lies','skies','rise','wise','disguise','surprise','realize','recognize','compromise','paradise'],
+  ow:['know','flow','show','grow','slow','below','although','shadow','tomorrow','follow','hollow','sorrow','borrow','narrow'],
+  all:['fall','call','walls','halls','crawl','stall','small','tall','all','recall','install','overall','enthrall'],
+  ore:['more','before','door','floor','core','shore','explore','ignore','restore','adore','implore','therefore','anymore'],
+  ake:['make','take','break','awake','mistake','forsake','heartache','shake','lake','stake','fake','bake'],
+  eam:['dream','stream','seem','scream','team','beam','gleam','theme','extreme','redeem','esteem'],
+};
+
+function findRhymes(){
+  const word=document.getElementById('rhyme-input').value.trim().toLowerCase();
+  const container=document.getElementById('rhyme-results');
+  if(!word){container.innerHTML='';return;}
+
+  // Find which rhyme group this word belongs to by checking suffix matches
+  let matches=[];
+  const wordEnd=word.slice(-4); // check last 4 chars then 3 then 2
+
+  // Try to find rhymes by suffix
+  const suffix4=word.slice(-4),suffix3=word.slice(-3),suffix2=word.slice(-2);
+
+  Object.values(RHYME_DB).forEach(group=>{
+    group.forEach(rhyme=>{
+      if(rhyme===word)return;
+      if(
+        (suffix4.length>=4&&rhyme.endsWith(suffix4))||
+        (suffix3.length>=3&&rhyme.endsWith(suffix3)&&suffix3!=='the')||
+        (suffix2.length>=2&&rhyme.endsWith(suffix2)&&suffix2.length>1&&!'etaoisnr'.includes(suffix2))
+      ){
+        if(!matches.includes(rhyme))matches.push(rhyme);
+      }
+    });
+  });
+
+  // Also check if the typed word is in any group and return group-mates
+  Object.values(RHYME_DB).forEach(group=>{
+    if(group.includes(word)){
+      group.forEach(r=>{if(r!==word&&!matches.includes(r))matches.push(r);});
+    }
+  });
+
+  // Deduplicate and limit
+  matches=[...new Set(matches)].slice(0,24);
+
+  if(!matches.length){
+    container.innerHTML=`<span class="rhyme-none">No rhymes found for "${escapeHTML(word)}"</span>`;
+    return;
+  }
+  container.innerHTML=matches.map(r=>`<span class="rhyme-chip" onclick="copyRhyme('${escapeHTML(r)}')" title="Click to copy">${escapeHTML(r)}</span>`).join('');
+}
+
+function copyRhyme(word){
+  navigator.clipboard?.writeText(word).catch(()=>{});
+  // Flash confirmation
+  const chips=document.querySelectorAll('.rhyme-chip');
+  chips.forEach(c=>{if(c.textContent===word){c.style.background='var(--teal-light)';c.style.color='var(--teal)';setTimeout(()=>{c.style.background='';c.style.color='';},800);}});
+}
+
+// ═══════════════════════════════════════════════
+// CAPO SUGGESTION
+// ═══════════════════════════════════════════════
+// Maps chord names to simpler open-position equivalents at various capo positions
+const CAPO_SIMPLE_MAP={
+  // If sounding chord X, at capo Y, play Z
+  'C#':{'1':'C'},'Db':{'1':'C'},'D':{'2':'C','5':'A','7':'G'},
+  'Eb':{'1':'D','3':'C','6':'A'},'D#':{'1':'D'},
+  'E':{'2':'D','4':'C','7':'A'},'F':{'1':'E','3':'D','5':'C'},
+  'F#':{'2':'E','4':'D','6':'C'},'Gb':{'2':'E'},
+  'G':{'3':'E','5':'D','7':'C'},'Ab':{'1':'G','4':'E','6':'D'},
+  'G#':{'1':'G','4':'E'},'A':{'2':'G','5':'E','7':'D'},
+  'Bb':{'1':'A','3':'G','6':'E'},'A#':{'1':'A'},
+  'B':{'2':'A','4':'G','7':'E'},
+  'C#m':{'1':'Cm'},'Dm':{'2':'Cm','5':'Am'},
+  'D#m':{'1':'Dm','3':'Cm'},'Ebm':{'3':'Cm'},
+  'Em':{'2':'Dm','4':'Cm','7':'Am'},'Fm':{'1':'Em','3':'Dm','5':'Cm'},
+  'F#m':{'2':'Em','4':'Dm','6':'Cm'},'Gm':{'3':'Em','5':'Dm'},
+  'G#m':{'1':'Gm','4':'Em','6':'Dm'},'Am':{'2':'Gm','5':'Em'},
+  'Bbm':{'1':'Am','3':'Gm'},'Bm':{'2':'Am','4':'Gm','7':'Em'},
+};
+
+function suggestCapo(){
+  const panel=document.getElementById('capo-suggest-panel');
+  const noneMsg=document.getElementById('capo-suggest-none');
+  if(!panel)return;
+
+  const lockedChords=getLockedChordNames();
+  if(!lockedChords.length){
+    panel.classList.remove('visible');panel.innerHTML='';
+    if(noneMsg)noneMsg.style.display='';return;
+  }
+
+  // Find capo positions where ALL locked chords have simpler equivalents
+  const suggestions=[];
+  for(let c=1;c<=7;c++){
+    // What would the sounding chords be at this capo?
+    // We reverse: written chord X at capo c sounds as Y
+    // We want: if user currently has capo 0, what capo c would let them play simpler shapes
+    const simplifications=lockedChords.map(written=>{
+      const sounding=getSoundingChord(written,0); // sounding without capo = written
+      const root=parseChordName(sounding)?.root;
+      if(!root)return null;
+      const simple=CAPO_SIMPLE_MAP[sounding]?.[String(c)]||CAPO_SIMPLE_MAP[root]?.[String(c)];
+      return simple?{from:sounding,to:simple}:null;
+    });
+
+    const allSimplified=simplifications.every(s=>s!==null);
+    const someSimplified=simplifications.some(s=>s!==null);
+    if(someSimplified&&capo===0){
+      const score=simplifications.filter(s=>s).length;
+      suggestions.push({capo:c,simplifications:simplifications.filter(Boolean),score});
+    }
+  }
+
+  if(!suggestions.length){
+    panel.classList.remove('visible');panel.innerHTML='';
+    if(noneMsg)noneMsg.style.display='';return;
+  }
+
+  // Show top 2 suggestions
+  const top=suggestions.sort((a,b)=>b.score-a.score).slice(0,2);
+  if(noneMsg)noneMsg.style.display='none';
+  panel.classList.add('visible');
+  panel.innerHTML=top.map(s=>`
+    <div class="capo-suggest-item">
+      <span class="capo-suggest-desc"><strong>Capo ${s.capo}</strong> — play ${s.simplifications.map(x=>x.to).join(', ')} (sounds as ${s.simplifications.map(x=>x.from).join(', ')})</span>
+      <button class="capo-apply-btn" onclick="applyCapoSuggestion(${s.capo})">Apply capo ${s.capo}</button>
+    </div>`).join('');
+}
+
+function applyCapoSuggestion(c){
+  const btn=document.querySelector(`.capo-btn:nth-child(${c+1})`);
+  setCapo(c,btn||null);
+  // Also update capo buttons manually
+  document.querySelectorAll('.capo-btn').forEach((b,i)=>b.classList.toggle('active',i===c));
+}
+
+// ═══════════════════════════════════════════════
+// TEMPO & FEEL
+// ═══════════════════════════════════════════════
+const FEELS=['Slow','Mid','Uptempo','Driving','Gentle','Intense','Stripped','Anthemic'];
+let songFeel='';
+
+function buildFeelRow(){
+  const row=document.getElementById('feel-row');
+  if(!row)return;
+  row.innerHTML='';
+  FEELS.forEach(f=>{
+    const b=document.createElement('button');
+    b.className='feel-btn'+(f===songFeel?' active':'');
+    b.textContent=f;
+    b.onclick=()=>{songFeel=(songFeel===f?'':f);buildFeelRow();triggerSave();};
+    row.appendChild(b);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// MELODY DETECT → PROGRESSION SUGGEST
+// ═══════════════════════════════════════════════
+let melodyBuffer=[];
+let melodyListening=false;
+let melodyAudioCtx=null,melodyAnalyser=null,melodyStream=null,melodyAnimId=null;
+
+// Common progressions by scale degree (0=I,1=ii,2=iii,3=IV,4=V,5=vi,6=vii)
+const PROGRESSIONS=[
+  {name:'I – vi – IV – V',degrees:[0,5,3,4],roman:'I–vi–IV–V',feel:'Pop / Folk classic'},
+  {name:'I – IV – I – V',degrees:[0,3,0,4],roman:'I–IV–I–V',feel:'Country / Simple'},
+  {name:'vi – IV – I – V',degrees:[5,3,0,4],roman:'vi–IV–I–V',feel:'Emotional / Minor feel'},
+  {name:'I – V – vi – IV',degrees:[0,4,5,3],roman:'I–V–vi–IV',feel:'Anthemic / Modern pop'},
+  {name:'I – IV – V – I',degrees:[0,3,4,0],roman:'I–IV–V–I',feel:'Blues / Traditional'},
+  {name:'ii – V – I',degrees:[1,4,0],roman:'ii–V–I',feel:'Jazz / Sophisticated'},
+  {name:'I – iii – IV – V',degrees:[0,2,3,4],roman:'I–iii–IV–V',feel:'Ascending / Hopeful'},
+  {name:'vi – V – IV – III',degrees:[5,4,3,2],roman:'vi–V–IV–III',feel:'Descending / Dramatic'},
+  {name:'I – vi – ii – V',degrees:[0,5,1,4],roman:'I–vi–ii–V',feel:'Nostalgic / Swing'},
+  {name:'I – IV – vi – V',degrees:[0,3,5,4],roman:'I–IV–vi–V',feel:'Uplifting / Singalong'},
+];
+
+async function startMelodyListen(){
+  if(melodyListening)return;
+  try{melodyStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});}
+  catch(e){document.getElementById('detected-key-display').textContent='Mic access denied';return;}
+  melodyAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  melodyAnalyser=melodyAudioCtx.createAnalyser();
+  melodyAnalyser.fftSize=2048;melodyAnalyser.smoothingTimeConstant=0.15;
+  melodyAudioCtx.createMediaStreamSource(melodyStream).connect(melodyAnalyser);
+  melodyListening=true;melodyBuffer=[];
+  const btn=document.getElementById('melody-detect-btn');
+  btn.classList.add('listening');
+  document.getElementById('melody-btn-label').textContent='Listening to melody…';
+  document.getElementById('detected-key-display').textContent='Hum your melody — keep going…';
+  collectMelodyPitch();
+}
+
+function stopMelodyListen(){
+  if(!melodyListening)return;
+  melodyListening=false;
+  if(melodyAnimId){cancelAnimationFrame(melodyAnimId);melodyAnimId=null;}
+  const btn=document.getElementById('melody-detect-btn');
+  btn.classList.remove('listening');btn.classList.add('analysing');
+  document.getElementById('melody-btn-label').textContent='Analysing…';
+  setTimeout(()=>{
+    analyseMelody();
+    if(melodyStream){melodyStream.getTracks().forEach(t=>t.stop());melodyStream=null;}
+    if(melodyAudioCtx){melodyAudioCtx.close();melodyAudioCtx=null;}
+    melodyAnalyser=null;
+    btn.classList.remove('analysing');
+    document.getElementById('melody-btn-label').textContent='Hold to hum melody';
+  },400);
+}
+
+function collectMelodyPitch(){
+  if(!melodyListening||!melodyAnalyser)return;
+  const d=new Float32Array(melodyAnalyser.fftSize);
+  melodyAnalyser.getFloatTimeDomainData(d);
+  let rms=0;for(let i=0;i<d.length;i++)rms+=d[i]*d[i];rms=Math.sqrt(rms/d.length);
+  if(rms>0.008){
+    const freq=yinPitch(d,melodyAudioCtx.sampleRate);
+    if(freq>60&&freq<1200)melodyBuffer.push(freq);
+  }
+  melodyAnimId=requestAnimationFrame(collectMelodyPitch);
+}
+
+function analyseMelody(){
+  if(melodyBuffer.length<5){
+    document.getElementById('detected-key-display').textContent='Not enough melody detected — try again';
+    return;
+  }
+
+  // Count note occurrences from melody
+  const noteCounts={};
+  melodyBuffer.forEach(freq=>{
+    const n=freqToNoteName(freq);
+    if(n)noteCounts[n]=(noteCounts[n]||0)+1;
+  });
+
+  // Find the most-sung note (likely tonic)
+  const sortedNotes=Object.entries(noteCounts).sort((a,b)=>b[1]-a[1]);
+  const detectedNoteIndices=sortedNotes.slice(0,5).map(([n])=>NOTE_NAMES.indexOf(n));
+
+  // Score each key: how many of the detected notes fit?
+  const keyScores={};
+  Object.entries(KEY_CONTEXT_DATA.major).forEach(([kName,kChords])=>{
+    const kNoteIndices=new Set();
+    kChords.forEach(ch=>{const idx=getChordNoteIndices(ch);if(idx)idx.forEach(i=>kNoteIndices.add(i));});
+    let score=0;
+    detectedNoteIndices.forEach((ni,rank)=>{if(kNoteIndices.has(ni))score+=(5-rank);});
+    // Bonus if most-common note is the root of the key
+    if(detectedNoteIndices[0]===NOTE_NAMES.indexOf(kName))score+=3;
+    keyScores[kName+'_major']=score;
+  });
+  Object.entries(KEY_CONTEXT_DATA.minor).forEach(([kName,kChords])=>{
+    const kNoteIndices=new Set();
+    kChords.forEach(ch=>{const idx=getChordNoteIndices(ch);if(idx)idx.forEach(i=>kNoteIndices.add(i));});
+    let score=0;
+    detectedNoteIndices.forEach((ni,rank)=>{if(kNoteIndices.has(ni))score+=(5-rank);});
+    if(detectedNoteIndices[0]===NOTE_NAMES.indexOf(kName.replace('m','')))score+=2;
+    keyScores[kName+'_minor']=score;
+  });
+
+  const sorted=Object.entries(keyScores).sort((a,b)=>b[1]-a[1]);
+  if(!sorted.length||sorted[0][1]===0){
+    document.getElementById('detected-key-display').textContent='Key unclear — try humming more clearly';
+    return;
+  }
+
+  const [bestKey,bestMode]=sorted[0][0].split('_');
+  const keyChords=(KEY_CONTEXT_DATA[bestMode]||{})[bestKey]||[];
+
+  document.getElementById('detected-key-display').textContent=`Detected key: ${bestKey} ${bestMode} — here are progressions that fit:`;
+  showProgressionSuggestions(bestKey,bestMode,keyChords);
+}
+
+function showProgressionSuggestions(detectedKey,detectedMode,keyChords){
+  const container=document.getElementById('prog-suggestions');
+
+  // Map scale degrees to actual chord names in this key
+  const degreeToChord=deg=>keyChords[deg]||null;
+
+  const html=PROGRESSIONS.map((prog,pi)=>{
+    const chords=prog.degrees.map(degreeToChord).filter(Boolean);
+    if(chords.length<prog.degrees.length)return ''; // not all chords available in this key
+    return `<div class="prog-suggestion-item">
+      <div class="prog-name">${escapeHTML(prog.feel)}</div>
+      <div class="prog-chords">${chords.join(' → ')}</div>
+      <div style="font-size:.65rem;color:var(--ink-faint);margin-bottom:.3rem">${prog.roman}</div>
+      <div class="prog-actions">
+        <button class="prog-play-btn" id="progplay-${pi}" onclick="playProgression([${chords.map(c=>`'${escapeHTML(c)}'`).join(',')}],${pi})">▶ Play</button>
+        <button class="prog-use-btn" onclick="useProgression([${chords.map(c=>`'${escapeHTML(c)}'`).join(',')}])">Use this →</button>
+      </div>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  container.innerHTML=html||'<p style="font-size:.72rem;color:var(--ink-faint);font-style:italic">No progressions found for this key</p>';
+}
+
+// ═══════════════════════════════════════════════
+// CHORD AUDIO PLAYBACK (Web Audio synthesiser)
+// ═══════════════════════════════════════════════
+let playbackCtx=null;
+let isPlaying=false;
+
+// MIDI note number → frequency
+function midiToFreq(midi){return 440*Math.pow(2,(midi-69)/12);}
+
+// Chord root name → MIDI note (middle octave)
+const ROOT_MIDI={C:60,'C#':61,Db:61,D:62,'D#':63,Eb:63,E:64,F:65,'F#':66,Gb:66,G:67,'G#':68,Ab:68,A:69,'A#':70,Bb:70,B:71};
+
+function getChordMidiNotes(chordName){
+  const parsed=parseChordName(chordName);
+  if(!parsed)return[];
+  const root=ROOT_MIDI[parsed.root];
+  if(root===undefined)return[];
+  const intervals=getChordNoteIndices(chordName)||[0,4,7];
+  // Build chord voicing: root in mid octave, spread across 2 octaves
+  return[root-12,...intervals.map(i=>root+i),root+12];
+}
+
+function playChord(chordName,duration=1.2,startTime=0){
+  if(!playbackCtx)playbackCtx=new(window.AudioContext||window.webkitAudioContext)();
+  const notes=getChordMidiNotes(chordName);
+  if(!notes.length)return;
+
+  notes.forEach((midi,i)=>{
+    const osc=playbackCtx.createOscillator();
+    const gain=playbackCtx.createGain();
+    osc.type='triangle'; // warmer than sine, less harsh than square
+    osc.frequency.value=midiToFreq(midi);
+    // Strum effect: each string starts slightly after the previous
+    const strumDelay=i*0.018;
+    gain.gain.setValueAtTime(0,playbackCtx.currentTime+startTime+strumDelay);
+    gain.gain.linearRampToValueAtTime(0.18,playbackCtx.currentTime+startTime+strumDelay+0.04);
+    gain.gain.exponentialRampToValueAtTime(0.001,playbackCtx.currentTime+startTime+strumDelay+duration);
+    osc.connect(gain);gain.connect(playbackCtx.destination);
+    osc.start(playbackCtx.currentTime+startTime+strumDelay);
+    osc.stop(playbackCtx.currentTime+startTime+strumDelay+duration+0.1);
+  });
+}
+
+function playProgression(chords,progIdx){
+  if(isPlaying)return;
+  isPlaying=true;
+  if(!playbackCtx)playbackCtx=new(window.AudioContext||window.webkitAudioContext)();
+
+  const btn=document.getElementById('progplay-'+progIdx);
+  if(btn){btn.classList.add('playing');btn.textContent='▶ Playing…';}
+
+  const chordDuration=1.5;
+  chords.forEach((ch,i)=>playChord(ch,chordDuration,i*chordDuration));
+
+  const totalTime=chords.length*chordDuration*1000+400;
+  setTimeout(()=>{
+    isPlaying=false;
+    if(btn){btn.classList.remove('playing');btn.textContent='▶ Play';}
+  },totalTime);
+}
+
+function useProgression(chords){
+  // Apply the suggested progression to the first section's first N lines
+  const sections=document.querySelectorAll('.section-block');
+  if(!sections.length)return;
+  const firstSec=sections[0];
+  const secId=firstSec.id;
+  const lines=firstSec.querySelectorAll('.lyric-line-wrapper');
+
+  chords.forEach((chord,i)=>{
+    let wrap=lines[i];
+    if(!wrap){addLine(secId);wrap=firstSec.querySelectorAll('.lyric-line-wrapper')[i];}
+    if(!wrap)return;
+    const row=wrap.querySelector('.chord-row');
+    row.querySelectorAll('.chord-marker').forEach(m=>m.remove());
+    const m=placeMarker(row,5,false); // place at 5% = start of line
+    nameMarker(m,chord,false);
+  });
+  updateSummary();saveSnapshot();
+  // Scroll to top of editor
+  document.getElementById('editor-pane').scrollTo({top:0,behavior:'smooth'});
+}
+
+// Wire suggestCapo into updateLockPanel
+const _origUpdateLockPanel=updateLockPanel;
+updateLockPanel=function(){_origUpdateLockPanel();suggestCapo();};
+
+
 // Wrapped after function definitions to avoid hoisting issues
 let _snapshotPatched=false;
 function applySnapshotPatches(){
@@ -1735,6 +2402,7 @@ document.addEventListener('keydown',e=>{
   if((e.metaKey||e.ctrlKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
   if((e.metaKey||e.ctrlKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){e.preventDefault();redo();return;}
   if(e.key==='Escape'){
+    closeSongLibrary();
     if(selectedMarker){selectedMarker.style.outline='';selectedMarker.classList.remove('selected');selectedMarker=null;}
     document.getElementById('picker-status').textContent='Click a marker to name it';
     document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('active'));
@@ -1747,7 +2415,7 @@ document.addEventListener('DOMContentLoaded',()=>{const btn=document.getElementB
 
 function init(){
   buildCapoRow();buildKeyRow();buildModeRow();buildTypeRow();
-  buildNotePicker();
+  buildNotePicker();buildFeelRow();
   applySnapshotPatches();
 
   // Restore autosaved state or start fresh
@@ -1756,6 +2424,8 @@ function init(){
 
   updateUndoRedoBtns();
   buildChordGrid();
+  refreshMirrorDropdowns();
+  suggestCapo();
 
   document.getElementById('editor-pane').addEventListener('click',()=>{
     setTimeout(()=>document.getElementById('hint')?.classList.add('hidden'),8000);
@@ -1763,12 +2433,11 @@ function init(){
 
   updateLiveKeyContext();
 
-  // Mobile: on mobile screen, wire the Chords tab to show desktop sidebar
+  // Mobile: on mobile screen, move sidebar into mobile container
   if(window.innerWidth<=680){
     const mobileSidebar=document.getElementById('mobile-sidebar');
     const desktopSidebar=document.querySelector('.sidebar');
     if(mobileSidebar&&desktopSidebar){
-      // Move sidebar into mobile-sidebar div for mobile
       mobileSidebar.appendChild(desktopSidebar);
     }
   }
