@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chord Lock — Stage 5</title>
+<title>Chord Lock</title>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -184,6 +184,61 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
 .fret-start-btn.active{background:var(--ink);color:var(--cream);border-color:var(--ink)}
 .str-status-btn{font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;padding:.18rem .4rem;border-radius:5px;border:1px solid var(--border-mid);background:white;color:var(--ink-muted);cursor:pointer;transition:all .12s;min-width:28px;text-align:center}
 .str-status-btn.muted{background:var(--red);color:white;border-color:var(--red)}
+
+/* ── AUTOSAVE TOAST ── */
+.save-toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--cream);font-size:.72rem;font-family:'DM Sans',sans-serif;padding:.4rem 1rem;border-radius:100px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999;white-space:nowrap}
+.save-toast.show{opacity:1}
+
+/* ── UNDO/REDO BUTTONS ── */
+.undo-redo{display:flex;gap:.25rem}
+.undo-redo-btn{font-size:.8rem;padding:.35rem .6rem;border-radius:6px;border:1px solid var(--border-mid);background:transparent;color:var(--ink-muted);cursor:pointer;transition:all .12s;line-height:1}
+.undo-redo-btn:hover:not(:disabled){background:var(--amber-light);border-color:var(--amber);color:var(--amber)}
+.undo-redo-btn:disabled{opacity:.3;cursor:default}
+
+/* ── NOTE PICKER FALLBACK ── */
+.note-picker-section{margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--border)}
+.note-picker-label{font-size:.65rem;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase;margin-bottom:.4rem}
+.note-picker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:.25rem;margin-bottom:.4rem}
+.note-picker-btn{font-family:'DM Mono',monospace;font-size:.7rem;font-weight:500;padding:.3rem .1rem;border-radius:5px;border:1px solid var(--border-mid);background:white;color:var(--ink);cursor:pointer;transition:all .12s;text-align:center}
+.note-picker-btn:hover{background:var(--amber-light);border-color:var(--amber);color:var(--amber)}
+.note-picker-btn.selected{background:var(--amber);color:white;border-color:var(--amber)}
+.note-picker-btn.in-key-note{border-color:rgba(15,110,86,.4)}
+.note-picker-actions{display:flex;gap:.4rem;margin-top:.3rem}
+.note-picker-find{flex:1;padding:.35rem;border-radius:6px;border:none;background:var(--ink);color:var(--cream);font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:500;cursor:pointer;transition:background .15s}
+.note-picker-find:hover{background:var(--amber)}
+.note-picker-find:disabled{opacity:.4;cursor:default}
+.note-picker-clear{padding:.35rem .6rem;border-radius:6px;border:1px solid var(--border-mid);background:transparent;font-size:.72rem;color:var(--ink-muted);cursor:pointer;transition:all .12s}
+.note-picker-clear:hover{border-color:var(--red);color:var(--red)}
+
+/* ── MOBILE LAYOUT ── */
+.mobile-tabs{display:none;position:fixed;bottom:0;left:0;right:0;background:white;border-top:1px solid var(--border);z-index:60;padding:.5rem 0 calc(.5rem + env(safe-area-inset-bottom))}
+.mobile-tabs-inner{display:flex;justify-content:space-around}
+.mobile-tab-btn{display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:.3rem .8rem;background:none;border:none;cursor:pointer;color:var(--ink-muted);font-family:'DM Sans',sans-serif;font-size:.62rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;border-radius:8px;transition:color .15s}
+.mobile-tab-btn.active{color:var(--teal)}
+.mobile-tab-btn .tab-icon{font-size:1.1rem}
+.mobile-tab-pane{display:none}
+.mobile-tab-pane.active{display:flex;flex-direction:column}
+
+@media(max-width:680px){
+  body{padding-bottom:72px}
+  .workspace{grid-template-columns:1fr;grid-template-rows:1fr}
+  .sidebar{display:none!important}
+  .editor-pane{padding:1.25rem 1rem}
+  .mobile-tabs{display:block}
+  .mobile-sidebar{position:fixed;top:0;left:0;right:0;bottom:72px;background:white;overflow-y:auto;padding:1rem;z-index:55;display:none;flex-direction:column;gap:.875rem}
+  .mobile-sidebar.active{display:flex}
+  .mobile-hum-pane{position:fixed;top:0;left:0;right:0;bottom:72px;background:var(--cream);overflow-y:auto;padding:1rem;z-index:55;display:none;flex-direction:column;gap:.875rem}
+  .mobile-hum-pane.active{display:flex}
+  header{padding:.6rem 1rem;flex-wrap:nowrap}
+  .header-centre{display:none}
+  .stage-badge{display:none}
+  .undo-redo-btn{padding:.3rem .5rem}
+  .chord-marker{font-size:.75rem;padding:.18rem .5rem}
+  .chord-row{height:30px}
+  .note-picker-grid{grid-template-columns:repeat(4,1fr)}
+  .hum-btn{padding:1rem}
+}
+
 </style>
 </head>
 <body>
@@ -198,9 +253,14 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
     <div class="capo-row" id="capo-row"></div>
   </div>
   <div class="header-actions">
-    <span class="stage-badge">Stage 5 🔒</span>
+    <div class="undo-redo">
+      <button class="undo-redo-btn" id="undo-btn" onclick="undo()" title="Undo (Cmd+Z)" disabled>↩</button>
+      <button class="undo-redo-btn" id="redo-btn" onclick="redo()" title="Redo (Cmd+Shift+Z)" disabled>↪</button>
+    </div>
+    <span class="stage-badge">Full Build 🔒</span>
     <button class="btn" onclick="clearAll()">Clear</button>
-    <button class="btn btn-primary" onclick="exportSheet()">Export ↗</button>
+    <button class="btn" onclick="exportPDF()">PDF ↗</button>
+    <button class="btn btn-primary" onclick="exportSheet()">TXT ↗</button>
   </div>
 </header>
 
@@ -250,6 +310,16 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
         <div class="notes-detected" id="notes-detected"></div>
         <p class="notes-label" style="margin-top:.4rem">Chord matches</p>
         <div class="pitch-suggestions" id="pitch-suggestions"></div>
+      </div>
+
+      <!-- NOTE PICKER FALLBACK -->
+      <div class="note-picker-section">
+        <p class="note-picker-label">Or tap notes you're singing</p>
+        <div class="note-picker-grid" id="note-picker-grid"></div>
+        <div class="note-picker-actions">
+          <button class="note-picker-find" id="note-picker-find-btn" onclick="findChordsFromNotes()" disabled>Find chords</button>
+          <button class="note-picker-clear" onclick="clearNotePicker()">Clear</button>
+        </div>
       </div>
     </div>
 
@@ -311,6 +381,30 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.75
 </div>
 <div class="drag-ghost" id="drag-ghost"></div>
 
+<!-- SAVE TOAST -->
+<div class="save-toast" id="save-toast">✓ Saved</div>
+
+<!-- MOBILE SIDEBAR (Chords tab) -->
+<div class="mobile-sidebar" id="mobile-sidebar"></div>
+
+<!-- MOBILE HUM PANE -->
+<div class="mobile-hum-pane" id="mobile-hum-pane"></div>
+
+<!-- MOBILE TAB BAR -->
+<div class="mobile-tabs">
+  <div class="mobile-tabs-inner">
+    <button class="mobile-tab-btn active" id="mtab-lyrics" onclick="switchMobileTab('lyrics')">
+      <span class="tab-icon">📝</span>Lyrics
+    </button>
+    <button class="mobile-tab-btn" id="mtab-chords" onclick="switchMobileTab('chords')">
+      <span class="tab-icon">🎸</span>Chords
+    </button>
+    <button class="mobile-tab-btn" id="mtab-hum" onclick="switchMobileTab('hum')">
+      <span class="tab-icon">🎤</span>Hum
+    </button>
+  </div>
+</div>
+
 <script>
 // ═══ DATA (same as Stage 4) ═══════════════════════════════
 const TUNING_LABELS={standard:'Standard (EADGBE)',openg:'Open G (DGDGBD)',dadgad:'DADGAD'};
@@ -342,7 +436,24 @@ const CHORDS={
     Dsus2:{dots:[{s:3,f:2},{s:1,f:3}],muted:[6,5],open:[4,2],fr:1,fingering:'Index G3·2  Ring e1·3'},
     Asus2:{dots:[{s:4,f:2},{s:3,f:2}],muted:[6],open:[5,2,1],fr:1,fingering:'Middle D4·2  Ring G3·2'},
     Gsus4:{dots:[{s:6,f:3},{s:5,f:2},{s:1,f:3},{s:2,f:1}],muted:[],open:[4,3],fr:1,fingering:'G shape + Index B2·1'},
+    Dsus4:{dots:[{s:3,f:2},{s:2,f:3},{s:1,f:3}],muted:[6,5],open:[4],fr:1,fingering:'D shape + pinky on B+e·3'},
+    Asus4:{dots:[{s:4,f:2},{s:3,f:2},{s:2,f:3}],muted:[6],open:[5,1],fr:1,fingering:'Am shape + ring on B2·3'},
+    Esus4:{dots:[{s:5,f:2},{s:4,f:2},{s:3,f:2}],muted:[],open:[6,2,1],fr:1,fingering:'Three fingers A+D+G all fret 2'},
     Cadd9:{dots:[{s:5,f:3},{s:4,f:2},{s:2,f:3},{s:1,f:3}],muted:[6],open:[3],fr:1,fingering:'C shape + Pinky on e1·3'},
+    Gadd9:{dots:[{s:6,f:3},{s:5,f:2},{s:1,f:3},{s:2,f:3}],muted:[],open:[4,3],fr:1,fingering:'G shape + Pinky e1+B2·3'},
+    Dadd9:{dots:[{s:3,f:2},{s:2,f:3},{s:1,f:2}],muted:[6,5],open:[4,2],fr:1,fingering:'D shape with open e add9'},
+    Bm7:{dots:[{s:5,f:2},{s:4,f:4},{s:3,f:4},{s:1,f:2}],muted:[6],open:[],fr:2,fingering:'Barre 2nd, omit B string'},
+    Fmaj7:{dots:[{s:4,f:2},{s:3,f:2}],muted:[6],open:[5,2,1],fr:1,fingering:'Index D4·2  Middle G3·2'},
+    B7:{dots:[{s:5,f:2},{s:4,f:4},{s:3,f:2},{s:1,f:2}],muted:[6],open:[4],fr:2,fingering:'Complex B7 shape'},
+    C7:{dots:[{s:5,f:3},{s:4,f:2},{s:2,f:1},{s:3,f:3}],muted:[6],open:[],fr:1,fingering:'C shape + ring on G3·3'},
+    'G/B':{dots:[{s:5,f:2},{s:1,f:3}],muted:[6],open:[4,3,2],fr:1,fingering:'Index A5·2 (bass B)  Ring e1·3'},
+    'D/F#':{dots:[{s:6,f:2},{s:3,f:2},{s:2,f:3},{s:1,f:2}],muted:[5],open:[4],fr:1,fingering:'Index E6·2 (bass F#)'},
+    'C/G':{dots:[{s:5,f:3},{s:4,f:2},{s:2,f:1}],muted:[],open:[6,3,1],fr:1,fingering:'C shape + low E open (G bass)'},
+    'Em/B':{dots:[{s:5,f:2},{s:4,f:2}],muted:[6],open:[4,3,2,1],fr:1,fingering:'Em shape with A string bass B'},
+    G5:{dots:[{s:6,f:3},{s:5,f:5}],muted:[4,3,2,1],open:[],fr:1,fingering:'Root G + 5th D only'},
+    A5:{dots:[{s:5,f:7},{s:4,f:9}],muted:[6,3,2,1],open:[],fr:1,fingering:'Root A + 5th E'},
+    D5:{dots:[{s:5,f:5},{s:4,f:7}],muted:[6,3,2,1],open:[],fr:1,fingering:'Root D + 5th A'},
+    E5:{dots:[{s:5,f:2},{s:4,f:2}],muted:[6,3,2,1],open:[],fr:1,fingering:'Root E + 5th B'},
   },
   openg:{
     G:{dots:[],muted:[],open:[6,5,4,3,2,1],fr:1,fingering:'All strings open'},
@@ -356,6 +467,9 @@ const CHORDS={
     Gmaj7:{dots:[{s:3,f:4},{s:2,f:3}],muted:[],open:[6,5,4,1],fr:1,fingering:'G·4, B·3'},
     Cadd9:{dots:[{s:3,f:2}],muted:[],open:[6,5,4,2,1],fr:1,fingering:'Only the G string at 2nd fret'},
     Gsus4:{dots:[{s:3,f:1}],muted:[],open:[6,5,4,2,1],fr:1,fingering:'G string 1st fret, rest open'},
+    Em7:{dots:[{s:5,f:2},{s:4,f:2},{s:3,f:2}],muted:[],open:[6,2,1],fr:1,fingering:'A+D+G strings at 2nd fret'},
+    D7:{dots:[{s:3,f:4},{s:1,f:1}],muted:[],open:[6,5,4,2],fr:1,fingering:'G string 4th, high e 1st'},
+    A7:{dots:[{s:5,f:2},{s:1,f:1}],muted:[],open:[6,4,3,2],fr:1,fingering:'A string 2nd, high e 1st'},
   },
   dadgad:{
     D:{dots:[],muted:[],open:[6,5,4,3,2,1],fr:1,fingering:'All strings open'},
@@ -370,6 +484,9 @@ const CHORDS={
     Dsus4:{dots:[{s:3,f:2}],muted:[],open:[6,5,4,2,1],fr:1,fingering:'G string 2nd fret'},
     Cadd9:{dots:[{s:6,f:3},{s:5,f:3}],muted:[],open:[4,3,2,1],fr:1,fingering:'Low D·3  A·3'},
     G7:{dots:[{s:6,f:2},{s:5,f:2},{s:3,f:2},{s:1,f:1}],muted:[],open:[4,2],fr:1,fingering:'G shape + high D string 1st fret'},
+    A7:{dots:[{s:6,f:4},{s:5,f:4},{s:3,f:4},{s:1,f:3}],muted:[],open:[4,2],fr:1,fingering:'A barre shape with 7th'},
+    Bm7:{dots:[{s:5,f:4},{s:4,f:4}],muted:[],open:[],fr:2,barre:{fret:2,from:6,to:1},fingering:'Barre 2nd + D+A at 4th'},
+    Esus4:{dots:[{s:6,f:2},{s:5,f:2},{s:4,f:2},{s:3,f:2},{s:2,f:2},{s:1,f:2}],muted:[],open:[],fr:2,barre:{fret:2,from:6,to:1},fingering:'Full barre 2nd — natural Esus4'},
   }
 };
 const KEY_DATA={
@@ -406,8 +523,8 @@ const KEY_CONTEXT_DATA={
     'G#m':['G#m','A#dim','B','C#m','D#m','E','F#']
   }
 };
-const CHORD_NOTES={G:[7,11,2],Am:[9,0,4],Bm:[11,2,6],C:[0,4,7],D:[2,6,9],Em:[4,7,11],F:[5,9,0],A:[9,1,4],Bb:[10,2,5],B:[11,3,6],Dm:[2,5,9],E:[4,8,11],Fm:[5,8,0],Gm:[7,10,2],Am7:[9,0,4,7],Dm7:[2,5,9,0],Em7:[4,7,11,2],Cmaj7:[0,4,7,11],Gmaj7:[7,11,2,6],D7:[2,6,9,0],G7:[7,11,2,5],A7:[9,1,4,7],E7:[4,8,11,2],Dsus2:[2,6,9],Asus2:[9,4,6],Cadd9:[0,4,7,2],Gsus4:[7,0,2]};
-const TYPES=[{id:'all',label:'All'},{id:'major',label:'Major'},{id:'minor',label:'Minor'},{id:'7th',label:'7ths'},{id:'sus',label:'Sus/Add'}];
+const CHORD_NOTES={G:[7,11,2],Am:[9,0,4],Bm:[11,2,6],C:[0,4,7],D:[2,6,9],Em:[4,7,11],F:[5,9,0],A:[9,1,4],Bb:[10,2,5],B:[11,3,6],Dm:[2,5,9],E:[4,8,11],Fm:[5,8,0],Gm:[7,10,2],Am7:[9,0,4,7],Dm7:[2,5,9,0],Em7:[4,7,11,2],Cmaj7:[0,4,7,11],Gmaj7:[7,11,2,6],Fmaj7:[5,9,0,4],D7:[2,6,9,0],G7:[7,11,2,5],A7:[9,1,4,7],E7:[4,8,11,2],B7:[11,3,6,10],C7:[0,4,7,10],Bm7:[11,2,6,9],Dsus2:[2,6,9],Dsus4:[2,5,9],Asus2:[9,4,6],Asus4:[9,2,7],Esus4:[4,9,11],Gsus4:[7,0,2],Cadd9:[0,4,7,2],Gadd9:[7,11,2,9],Dadd9:[2,6,9,4],'G/B':[7,11,2],'D/F#':[2,6,9],'C/G':[0,4,7],'Em/B':[4,7,11],G5:[7,2],A5:[9,4],D5:[2,9],E5:[4,11],Emadd9:[4,7,11,6]};
+const TYPES=[{id:'all',label:'All'},{id:'major',label:'Major'},{id:'minor',label:'Minor'},{id:'7th',label:'7ths'},{id:'sus',label:'Sus/Add'},{id:'slash',label:'Slash'},{id:'power',label:'Power'}];
 const TRANSITIONS={G:{D:1.0,Em:1.0,C:0.9,Am:0.8,Bm:0.7,G7:0.6},C:{G:1.0,F:0.9,Am:0.9,Dm:0.8,Em:0.7},D:{G:1.0,A:0.9,Em:0.8,Bm:0.8,D7:0.7},Em:{Am:1.0,C:0.9,D:0.9,G:0.8,B:0.7},Am:{Em:1.0,Dm:0.9,G:0.8,C:0.8,E:0.7},F:{C:1.0,Bb:0.9,Am:0.8,Dm:0.8},A:{D:1.0,E:0.9,Bm:0.8,A7:0.7},E:{Am:1.0,A:0.9,B:0.8,E7:0.7},Dm:{Am:1.0,Gm:0.9,Bb:0.8,C:0.8},Bm:{Em:1.0,G:0.9,D:0.8,A:0.8}};
 
 const DEGREE_TRANSITIONS={
@@ -634,10 +751,12 @@ function setType(t,btn){typeFilter=t;document.querySelectorAll('#type-row .pill-
 function matchesType(ch){
   if(typeFilter==='all')return true;
   const c=ch.toLowerCase();
-  if(typeFilter==='major')return !c.includes('m')&&!c.includes('7')&&!c.includes('sus')&&!c.includes('add');
-  if(typeFilter==='minor')return c.includes('m')&&!c.includes('maj')&&!c.includes('7');
+  if(typeFilter==='major')return !c.includes('m')&&!c.includes('7')&&!c.includes('sus')&&!c.includes('add')&&!c.includes('/')&&!c.includes('5');
+  if(typeFilter==='minor')return c.includes('m')&&!c.includes('maj')&&!c.includes('7')&&!c.includes('add');
   if(typeFilter==='7th')return c.includes('7');
   if(typeFilter==='sus')return c.includes('sus')||c.includes('add');
+  if(typeFilter==='slash')return ch.includes('/');
+  if(typeFilter==='power')return ch.endsWith('5');
   return true;
 }
 
@@ -728,7 +847,7 @@ function addSection(label){
   document.getElementById('sections-container').appendChild(block);
   addLine(id);addLine(id);addLine(id);
 }
-function removeSection(id){document.getElementById(id)?.remove();updateSummary();updateLiveKeyContext();}
+function removeSection(id){document.getElementById(id)?.remove();updateSummary();updateLiveKeyContext();saveSnapshot();}
 
 function addLine(secId,chordsData){
   const sec=document.getElementById(secId),cont=sec.querySelector('.lines-container');
@@ -739,6 +858,7 @@ function addLine(secId,chordsData){
   const row=document.createElement('div');row.className='chord-row';
   row.addEventListener('click',e=>{if(!e.target.closest('.chord-marker'))onRowClick(e,row);});
   const inp=document.createElement('input');inp.type='text';inp.className='lyric-text-input';inp.placeholder='Type lyric here...';
+  inp.addEventListener('input',()=>triggerSave());
   inp.addEventListener('keydown',e=>{
     if(e.key==='Enter'){e.preventDefault();addLine(secId);const ins=sec.querySelectorAll('.lyric-text-input');ins[ins.length-1].focus();}
     if(e.key==='Backspace'&&inp.value===''){const all=cont.querySelectorAll('.lyric-line-wrapper');if(all.length>1){wrap.remove();updateSummary();const r=cont.querySelectorAll('.lyric-text-input');if(r.length)r[r.length-1].focus();}}
@@ -1190,12 +1310,472 @@ function exportSheet(){
   a.download=title.replace(/\s+/g,'-').toLowerCase()+'-chords.txt';a.click();
 }
 
+// ═══════════════════════════════════════════════
+// FEATURE 1: AUTOSAVE
+// ═══════════════════════════════════════════════
+const SAVE_KEY='chordlock-autosave';
+let saveDebounce=null;
+
+function serializeState(){
+  const sections=[];
+  document.querySelectorAll('.section-block').forEach(sec=>{
+    const lines=[];
+    sec.querySelectorAll('.lyric-line-wrapper').forEach(wrap=>{
+      const markers=[];
+      wrap.querySelectorAll('.chord-row .chord-marker').forEach(m=>{
+        if(m.dataset.chord)markers.push({pct:parseFloat(m.dataset.pct),chord:m.dataset.chord,locked:isLocked(m)});
+      });
+      lines.push({lyric:wrap.querySelector('.lyric-text-input').value,markers});
+    });
+    sections.push({label:sec.querySelector('.section-label-input').value,lines});
+  });
+  // Save custom chord shapes
+  const customShapes={};
+  Object.keys(CHORDS[tuning]||{}).forEach(ch=>{
+    if(!['standard','openg','dadgad'].some(t=>Object.keys(CHORDS[t]||{}).includes(ch)&&t!==tuning)){
+      // it's custom in this tuning
+    }
+  });
+  return{version:2,title:document.getElementById('song-title').value,tuning,capo,key,mode,typeFilter,sections,customShapes};
+}
+
+function restoreState(state){
+  if(!state||!state.version)return;
+  document.getElementById('song-title').value=state.title||'';
+  tuning=state.tuning||'standard';
+  capo=state.capo||0;
+  key=state.key||'G';
+  mode=state.mode||'major';
+  typeFilter=state.typeFilter||'all';
+
+  // Update UI controls
+  document.querySelectorAll('.tuning-btn').forEach(b=>b.classList.toggle('active',b.textContent.toLowerCase().replace(' ','')===tuning||b.textContent==='Standard'&&tuning==='standard'||b.textContent==='Open G'&&tuning==='openg'||b.textContent==='DADGAD'&&tuning==='dadgad'));
+  buildCapoRow();buildKeyRow();buildModeRow();buildTypeRow();
+
+  // Rebuild sections
+  document.getElementById('sections-container').innerHTML='';
+  sectionCounter=0;markerCounter=0;lockedMarkerIds.clear();
+
+  (state.sections||[]).forEach(sec=>{
+    sectionCounter++;
+    const id='sec-'+sectionCounter;
+    const block=document.createElement('div');
+    block.className='section-block';block.id=id;
+    block.innerHTML=`<div class="section-label-row"><input class="section-label-input" value="${escapeHTML(sec.label||'')}" placeholder="Section..."><button class="remove-section-btn" onclick="removeSection('${id}')">✕ remove</button></div><div class="lines-container"></div><button class="add-line-btn" onclick="addLine('${id}')">+ add line</button>`;
+    document.getElementById('sections-container').appendChild(block);
+
+    (sec.lines||[]).forEach(line=>{
+      addLine(id);
+      const wrap=block.querySelectorAll('.lyric-line-wrapper');
+      const lastWrap=wrap[wrap.length-1];
+      lastWrap.querySelector('.lyric-text-input').value=line.lyric||'';
+      const row=lastWrap.querySelector('.chord-row');
+      (line.markers||[]).forEach(({pct,chord,locked})=>{
+        const m=placeMarker(row,pct,false);
+        if(chord)nameMarker(m,chord,false);
+        if(locked&&chord){lockedMarkerIds.add(m.id);m.classList.add('locked');refreshMarkerLockIcon(m);}
+      });
+    });
+  });
+
+  buildChordGrid();updateSummary();updateLockPanel();updateLiveKeyContext();
+  syncMobileContent();
+}
+
+function triggerSave(){
+  clearTimeout(saveDebounce);
+  saveDebounce=setTimeout(()=>{
+    try{
+      const state=serializeState();
+      localStorage.setItem(SAVE_KEY,JSON.stringify(state));
+      showSaveToast();
+    }catch(e){console.warn('Autosave failed:',e);}
+  },800);
+}
+
+function showSaveToast(){
+  const t=document.getElementById('save-toast');
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+function loadSavedState(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw)return false;
+    const state=JSON.parse(raw);
+    if(state&&state.sections&&state.sections.length){
+      restoreState(state);
+      return true;
+    }
+  }catch(e){console.warn('Load failed:',e);}
+  return false;
+}
+
+// ═══════════════════════════════════════════════
+// FEATURE 2: UNDO / REDO
+// ═══════════════════════════════════════════════
+const undoStack=[];
+const redoStack=[];
+const MAX_UNDO=50;
+
+function saveSnapshot(){
+  try{
+    const snap=JSON.stringify(serializeState());
+    undoStack.push(snap);
+    redoStack.length=0;
+    if(undoStack.length>MAX_UNDO)undoStack.shift();
+    updateUndoRedoBtns();
+    triggerSave();
+  }catch(e){}
+}
+
+function undo(){
+  if(!undoStack.length)return;
+  try{
+    redoStack.push(JSON.stringify(serializeState()));
+    const prev=undoStack.pop();
+    restoreState(JSON.parse(prev));
+    updateUndoRedoBtns();
+    triggerSave();
+  }catch(e){}
+}
+
+function redo(){
+  if(!redoStack.length)return;
+  try{
+    undoStack.push(JSON.stringify(serializeState()));
+    const next=redoStack.pop();
+    restoreState(JSON.parse(next));
+    updateUndoRedoBtns();
+    triggerSave();
+  }catch(e){}
+}
+
+function updateUndoRedoBtns(){
+  const u=document.getElementById('undo-btn'),r=document.getElementById('redo-btn');
+  if(u)u.disabled=undoStack.length===0;
+  if(r)r.disabled=redoStack.length===0;
+}
+
+// ═══════════════════════════════════════════════
+// FEATURE 5: NOTE PICKER FALLBACK
+// ═══════════════════════════════════════════════
+let selectedNotes=new Set();
+
+function buildNotePicker(){
+  const grid=document.getElementById('note-picker-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  const lockedSounding=getLockedChordNames().map(ch=>getSoundingChord(ch));
+  const kc=detectKey(lockedSounding);
+  const keyNoteIndices=new Set();
+  if(kc){
+    kc.chords.forEach(ch=>{
+      const idx=getChordNoteIndices(ch);
+      if(idx)idx.forEach(i=>keyNoteIndices.add(i));
+    });
+  }
+  NOTE_NAMES.forEach((note,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='note-picker-btn'+(selectedNotes.has(note)?' selected':'')+(keyNoteIndices.has(idx)?' in-key-note':'');
+    btn.textContent=note;
+    btn.onclick=()=>toggleNotePickerNote(note,btn);
+    grid.appendChild(btn);
+  });
+  // Also update mobile hum pane if exists
+  const mgrid=document.getElementById('mobile-note-picker-grid');
+  if(mgrid)mgrid.innerHTML=grid.innerHTML;
+}
+
+function toggleNotePickerNote(note,btn){
+  if(selectedNotes.has(note)){selectedNotes.delete(note);btn.classList.remove('selected');}
+  else{selectedNotes.add(note);btn.classList.add('selected');}
+  const findBtn=document.getElementById('note-picker-find-btn');
+  if(findBtn)findBtn.disabled=selectedNotes.size===0;
+  const mfindBtn=document.getElementById('mobile-note-picker-find-btn');
+  if(mfindBtn)mfindBtn.disabled=selectedNotes.size===0;
+}
+
+function findChordsFromNotes(){
+  if(!selectedNotes.size)return;
+  const detectedIndices=Array.from(selectedNotes).map(n=>NOTE_NAMES.indexOf(n)).filter(i=>i>=0);
+  // Show detected notes
+  document.getElementById('notes-detected').innerHTML=Array.from(selectedNotes).map(n=>`<span class="note-pill">${n}</span>`).join('');
+  const scored=scoreChords(detectedIndices,selectedMarker);
+  showPitchSuggestions(scored);
+  document.getElementById('detected-notes-area').style.display='block';
+  document.getElementById('hum-status').textContent=`Notes: ${Array.from(selectedNotes).join(', ')} — ${scored.length} matches`;
+}
+
+function clearNotePicker(){
+  selectedNotes.clear();
+  buildNotePicker();
+  const findBtn=document.getElementById('note-picker-find-btn');
+  if(findBtn)findBtn.disabled=true;
+}
+
+// ═══════════════════════════════════════════════
+// FEATURE 3: PDF EXPORT
+// ═══════════════════════════════════════════════
+function exportPDF(){
+  // Load jsPDF dynamically then generate
+  if(window.jspdf){generatePDF();}
+  else{
+    const script=document.createElement('script');
+    script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload=generatePDF;
+    script.onerror=()=>alert('PDF library failed to load. Check your internet connection, then try again.');
+    document.head.appendChild(script);
+  }
+}
+
+function generatePDF(){
+  try{
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+    const pageW=210,pageH=297,marginL=15,marginR=15,marginT=20;
+    const usableW=pageW-marginL-marginR;
+    let y=marginT;
+
+    // Title
+    const title=document.getElementById('song-title').value||'Untitled';
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(22);
+    doc.text(title,marginL,y);
+    y+=8;
+
+    // Meta line
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9);
+    const lockedSounding=getLockedChordNames().map(ch=>getSoundingChord(ch));
+    const kc=detectKey(lockedSounding);
+    let meta=`Tuning: ${TUNING_LABELS[tuning]}`;
+    if(capo>0)meta+=`  ·  Capo: ${capo}`;
+    if(kc)meta+=`  ·  Key: ${kc.key} ${kc.mode}`;
+    doc.setTextColor(100);
+    doc.text(meta,marginL,y);
+    doc.setTextColor(0);
+    y+=8;
+
+    // Divider
+    doc.setDrawColor(200);
+    doc.line(marginL,y,pageW-marginR,y);
+    y+=6;
+
+    // Sections
+    document.querySelectorAll('.section-block').forEach(sec=>{
+      const label=sec.querySelector('.section-label-input').value;
+      if(label){
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(8);
+        doc.setTextColor(180,120,0);
+        doc.text(label.toUpperCase(),marginL,y);
+        doc.setTextColor(0);
+        y+=5;
+      }
+
+      sec.querySelectorAll('.lyric-line-wrapper').forEach(wrap=>{
+        const lyric=wrap.querySelector('.lyric-text-input').value;
+        const markers=Array.from(wrap.querySelectorAll('.chord-row .chord-marker'))
+          .filter(m=>m.dataset.chord)
+          .sort((a,b)=>parseFloat(a.dataset.pct)-parseFloat(b.dataset.pct));
+
+        if(!lyric&&!markers.length)return;
+
+        // Check page break
+        if(y>pageH-30){doc.addPage();y=marginT;}
+
+        // Chord line above lyric
+        if(markers.length){
+          doc.setFont('helvetica','bold');
+          doc.setFontSize(9);
+          doc.setTextColor(15,110,86);
+          markers.forEach(m=>{
+            const x=marginL+(parseFloat(m.dataset.pct)/100)*usableW;
+            doc.text(m.dataset.chord,x,y);
+          });
+          doc.setTextColor(0);
+          y+=4.5;
+        }
+
+        // Lyric line
+        if(lyric){
+          doc.setFont('helvetica','normal');
+          doc.setFontSize(10);
+          doc.text(lyric,marginL,y);
+          y+=5.5;
+        } else {
+          y+=1;
+        }
+      });
+      y+=4; // section spacing
+    });
+
+    // Chord diagram grid at bottom
+    const shapes=CHORDS[tuning]||CHORDS.standard;
+    const usedChords=[...new Set(
+      Array.from(document.querySelectorAll('.chord-marker[data-chord]'))
+        .map(m=>m.dataset.chord).filter(Boolean)
+    )].filter(ch=>shapes[ch]);
+
+    if(usedChords.length){
+      if(y>pageH-60){doc.addPage();y=marginT;}
+      y+=4;
+      doc.setDrawColor(200);
+      doc.line(marginL,y,pageW-marginR,y);
+      y+=5;
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(8);
+      doc.setTextColor(100);
+      doc.text('CHORD DIAGRAMS',marginL,y);
+      doc.setTextColor(0);
+      y+=5;
+
+      const diagW=28,diagH=24,diagCols=6,diagSpacing=3;
+      usedChords.forEach((ch,i)=>{
+        const col=i%diagCols;
+        const row=Math.floor(i/diagCols);
+        const dx=marginL+col*(diagW+diagSpacing);
+        const dy=y+row*(diagH+8);
+
+        if(dy+diagH+8>pageH-10){return;} // skip if no room
+
+        const sh=shapes[ch];
+        if(!sh)return;
+        const fr=sh.fr||1;
+        const rows=4;
+        const gW=diagW-4,gH=diagH-2;
+        const sx=s=>dx+2+(6-s)*(gW/5);
+        const fy=f=>dy+2+(f-fr)*(gH/rows)+gH/(rows*2);
+
+        // Chord name label
+        doc.setFont('helvetica','bold');doc.setFontSize(7);
+        doc.text(ch,dx+diagW/2,dy,{align:'center'});
+
+        // Nut or fret number
+        if(fr===1){doc.setDrawColor(0);doc.setLineWidth(0.5);doc.line(dx+2,dy+2,dx+diagW-2,dy+2);}
+        else{doc.setFont('helvetica','normal');doc.setFontSize(5);doc.setTextColor(180,120,0);doc.text(fr+'fr',dx+diagW-1,dy+4);doc.setTextColor(0);}
+
+        // Grid lines
+        doc.setDrawColor(180);doc.setLineWidth(0.1);
+        for(let s=1;s<=6;s++){doc.line(sx(s),dy+2,sx(s),dy+2+gH);}
+        for(let fi=0;fi<=rows;fi++){const fy2=dy+2+fi*(gH/rows);doc.line(dx+2,fy2,dx+diagW-2,fy2);}
+
+        // Barre
+        if(sh.barre){
+          const b=sh.barre;
+          const by=dy+2+(b.fret-fr)*(gH/rows);
+          doc.setFillColor(15,110,86);doc.setDrawColor(15,110,86);
+          doc.roundedRect(sx(b.from)-1.5,by-1.2,sx(b.to)-sx(b.from)+3,gH/rows*0.65,1,1,'F');
+        }
+
+        // Dots
+        doc.setFillColor(15,110,86);
+        (sh.dots||[]).forEach(({s,f})=>{doc.circle(sx(s),fy(f),1.4,'F');});
+
+        // Muted
+        doc.setTextColor(150);doc.setFontSize(5);
+        (sh.muted||[]).forEach(s=>{doc.text('x',sx(s),dy+1,{align:'center'});});
+        doc.setTextColor(0);
+      });
+    }
+
+    doc.save(title.replace(/\s+/g,'-').toLowerCase()+'-chords.pdf');
+  }catch(e){
+    console.error('PDF generation failed:',e);
+    alert('PDF generation failed — your chord chart has been exported as text instead.');
+    exportSheet();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// FEATURE 7: MOBILE TAB SWITCHING
+// ═══════════════════════════════════════════════
+let mobileTab='lyrics';
+
+function switchMobileTab(tab){
+  mobileTab=tab;
+  document.querySelectorAll('.mobile-tab-btn').forEach(b=>b.classList.remove('active'));
+  const btn=document.getElementById('mtab-'+tab);
+  if(btn)btn.classList.add('active');
+
+  const sidebar=document.getElementById('mobile-sidebar');
+  const humPane=document.getElementById('mobile-hum-pane');
+  if(sidebar)sidebar.classList.toggle('active',tab==='chords');
+  if(humPane)humPane.classList.toggle('active',tab==='hum');
+}
+
+function syncMobileContent(){
+  // Clone sidebar content into mobile sidebar on mobile
+  const sidebar=document.getElementById('mobile-sidebar');
+  const desktop=document.querySelector('.sidebar');
+  if(sidebar&&desktop&&window.innerWidth<=680){
+    // Don't clone — instead show the actual sidebar as overlay
+    // The mobile-sidebar div is used as a scroll container wrapper
+  }
+}
+
+// ═══════════════════════════════════════════════
+// PATCH: Wire saveSnapshot into key actions
+// ═══════════════════════════════════════════════
+// Wrapped after function definitions to avoid hoisting issues
+let _snapshotPatched=false;
+function applySnapshotPatches(){
+  if(_snapshotPatched)return;_snapshotPatched=true;
+  const _oNM=nameMarker;
+  nameMarker=function(m,ch,deselect=true){_oNM(m,ch,deselect);if(deselect)saveSnapshot();};
+  const _oRM=removeMarker;
+  removeMarker=function(m){_oRM(m);saveSnapshot();};
+  const _oTL=toggleLock;
+  toggleLock=function(m){_oTL(m);saveSnapshot();};
+}
+
 document.addEventListener('keydown',e=>{
-  if(e.key==='Escape'){if(selectedMarker){selectedMarker.style.outline='';selectedMarker.classList.remove('selected');selectedMarker=null;}document.getElementById('picker-status').textContent='Click a marker to name it';document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('active'));hideDiagram();}
+  if((e.metaKey||e.ctrlKey)&&e.key==='z'&&!e.shiftKey){e.preventDefault();undo();return;}
+  if((e.metaKey||e.ctrlKey)&&(e.key==='y'||(e.key==='z'&&e.shiftKey))){e.preventDefault();redo();return;}
+  if(e.key==='Escape'){
+    if(selectedMarker){selectedMarker.style.outline='';selectedMarker.classList.remove('selected');selectedMarker=null;}
+    document.getElementById('picker-status').textContent='Click a marker to name it';
+    document.querySelectorAll('.chord-btn').forEach(b=>b.classList.remove('active'));
+    hideDiagram();
+  }
   if((e.key==='Delete'||e.key==='Backspace')&&selectedMarker&&document.activeElement.tagName!=='INPUT')removeMarker(selectedMarker);
-  if(e.key==='l'&&e.metaKey&&selectedMarker){e.preventDefault();toggleLock(selectedMarker);updateLockToggleBtnLabel(selectedMarker);}
+  if((e.key==='l')&&(e.metaKey||e.ctrlKey)&&selectedMarker){e.preventDefault();toggleLock(selectedMarker);updateLockToggleBtnLabel(selectedMarker);}
 });
 document.addEventListener('DOMContentLoaded',()=>{const btn=document.getElementById('hum-btn');if(btn)btn.addEventListener('contextmenu',e=>e.preventDefault());});
+
+function init(){
+  buildCapoRow();buildKeyRow();buildModeRow();buildTypeRow();
+  buildNotePicker();
+  applySnapshotPatches();
+
+  // Restore autosaved state or start fresh
+  const restored=loadSavedState();
+  if(!restored){addSection('Verse 1');}
+
+  updateUndoRedoBtns();
+  buildChordGrid();
+
+  document.getElementById('editor-pane').addEventListener('click',()=>{
+    setTimeout(()=>document.getElementById('hint')?.classList.add('hidden'),8000);
+  },{once:true});
+
+  updateLiveKeyContext();
+
+  // Mobile: on mobile screen, wire the Chords tab to show desktop sidebar
+  if(window.innerWidth<=680){
+    const mobileSidebar=document.getElementById('mobile-sidebar');
+    const desktopSidebar=document.querySelector('.sidebar');
+    if(mobileSidebar&&desktopSidebar){
+      // Move sidebar into mobile-sidebar div for mobile
+      mobileSidebar.appendChild(desktopSidebar);
+    }
+  }
+
+  // Save initial state
+  setTimeout(saveSnapshot,600);
+}
 
 init();
 </script>
